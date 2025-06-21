@@ -10,9 +10,6 @@
     --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --spacing: 1px;
-    --container-sm: 120rem;
-    --text-base: 1rem;
-    --text-base--line-height: calc(1.5 / 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
   }
@@ -173,7 +170,16 @@
   .p-\[clamp\(xl\,30px\)\] {
     padding:  clamp(xl, 30px) /* Invalid clamp() values */;
   }
-  .min-\[100px\]\:text-\[clamp\(11px\,11px\)\] {}
+  .min-\[100px\]\:text-\[clamp\(11px\,11px\)\] {
+    @media (width >= 100px) {
+      @media (width < 96rem) {
+        font-size: clamp(0.6875rem, calc(0.6875rem + ((0.6875 - 0.6875) / (96 - 6.25)) * (100vw - 100px)), 0.6875rem);
+      }
+    }
+    @media (width >= 96rem) {
+      font-size: 0.6875rem;
+    }
+  }
   .md\:p-3 {
     @media (width >= 48rem) {
       padding: calc(var(--spacing) * 3);
@@ -193,10 +199,14 @@
       line-height: calc(var(--spacing) * 2);
     }
   }
-  .\@md\:text-base {
+  .\@md\:text-\[clamp\(16px\,50px\)\] {
     @container (width >= 28rem) {
-      font-size: var(--text-base);
-      line-height: var(--tw-leading, var(--text-base--line-height));
+      @container (width < 80rem) {
+        font-size: clamp(1rem, calc(1rem + ((3.125 - 1) / (80 - 28)) * (100cqw - 28rem)), 3.125rem);
+      }
+    }
+    @container (width >= 80rem) {
+      font-size: 3.125rem;
     }
   }
 }

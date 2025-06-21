@@ -24,8 +24,8 @@
 
 @theme static {
 
- /* --breakpoint-3xl: 120rem; */
- --container-sm: 120rem;
+ /* --breakpoint-3xl: 120rem; 
+ --container-sm: 120rem;*/
 }
 
 @theme {

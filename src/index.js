@@ -268,13 +268,16 @@ const clampwind = (opts = {}) => {
                 const innerMQ = postcss.atRule({ name: 'media', params: `(width < ${maxScreen})` });
                 const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
                 innerMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
-                mediaNode.append(innerMQ);
+
+                const outerMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
+                outerMQ.append(innerMQ);
+                newMediaQueries.push(outerMQ);
 
                 const upperMQ = postcss.atRule({ name: 'media', params: `(width >= ${maxScreen})` });
                 upperMQ.append(
                   postcss.decl({ prop: decl.prop, value: upper })
                 );
-                mediaNode.append(upperMQ);
+                newMediaQueries.push(upperMQ);
 
                 decl.remove();
 
@@ -332,13 +335,16 @@ const clampwind = (opts = {}) => {
                 const innerCQ = postcss.atRule({ name: 'container', params: `(width < ${maxContainer})` });
                 const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
                 innerCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
-                mediaNode.append(innerCQ);
+
+                const outerCQ = postcss.atRule({ name: 'container', params: `(width >= ${minContainer})` });
+                outerCQ.append(innerCQ);
+                newContainerQueries.push(outerCQ);
 
                 const upperCQ = postcss.atRule({ name: 'container', params: `(width >= ${maxContainer})` });
                 upperCQ.append(
                   postcss.decl({ prop: decl.prop, value: upper })
                 );
-                mediaNode.append(upperCQ);
+                newContainerQueries.push(upperCQ);
 
                 decl.remove();
 
