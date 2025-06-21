@@ -6,13 +6,15 @@
   <title>Transform Variant Demo</title>
   <link href="./output.css" rel="stylesheet">
 </head>
-<body>
+<body class="@container">
   <h1 class="@md:text-[clamp(16px,50px)] lg:leading-2">Transform Variant Demo</h1>
   <p class="md:max-[800px]:leading-[clamp(40px,20px)] ">Resize window to see the responsive variants in action.</p>
   
   <!-- Transformed utility with ~md breakpoint -->
-  <div class="p-[clamp(xl,30px)] md:p-3 bg-gray-100 min-[100px]:text-[clamp(11px,11px)] ">
-    At md breakpoint (≥768px), this gets a 16px border and blue background
+  <div class="@container/main">
+    <div class="@sm/main:@max-[1024px]/main:text-[clamp(16px,50px)]">
+      At md breakpoint (≥768px), this gets a 16px border and blue background
+    </div>
   </div>
   
 </body>

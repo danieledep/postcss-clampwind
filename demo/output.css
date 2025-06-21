@@ -7,7 +7,6 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
-    --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --spacing: 1px;
     --default-font-family: var(--font-sans);
@@ -160,30 +159,16 @@
   }
 }
 @layer utilities {
+  .\@container\/main {
+    container-type: inline-size;
+    container-name: main;
+  }
+  .\@container {
+    container-type: inline-size;
+  }
   .border {
     border-style: var(--tw-border-style);
     border-width: 1px;
-  }
-  .bg-gray-100 {
-    background-color: var(--color-gray-100);
-  }
-  .p-\[clamp\(xl\,30px\)\] {
-    padding:  clamp(xl, 30px) /* Invalid clamp() values */;
-  }
-  .min-\[100px\]\:text-\[clamp\(11px\,11px\)\] {
-    @media (width >= 100px) {
-      @media (width < 96rem) {
-        font-size: clamp(0.6875rem, calc(0.6875rem + ((0.6875 - 0.6875) / (96 - 6.25)) * (100vw - 100px)), 0.6875rem);
-      }
-    }
-    @media (width >= 96rem) {
-      font-size: 0.6875rem;
-    }
-  }
-  .md\:p-3 {
-    @media (width >= 48rem) {
-      padding: calc(var(--spacing) * 3);
-    }
   }
   .md\:max-\[800px\]\:leading-\[clamp\(40px\,20px\)\] {
     @media (width >= 48rem) {
@@ -199,14 +184,62 @@
       line-height: calc(var(--spacing) * 2);
     }
   }
+  .\@sm\/main\:text-\[clamp\(16px\,50px\)\] {
+    @container main (width >= 24rem) {
+      @container main (width < 80rem) {
+        font-size: clamp(1rem, calc(1rem + ((3.125 - 1) / (80 - 24)) * (100cqw - 24rem)), 3.125rem);
+      }
+    }
+    @container main (width >= 80rem) {
+      font-size: 3.125rem;
+    }
+  }
+  .\@sm\/main\:text-\[clamp\(50px\,16px\)\] {
+    @container main (width >= 24rem) {
+      @container main (width < 80rem) {
+        font-size: clamp(1rem, calc(3.125rem + ((1 - 3.125) / (80 - 24)) * (100cqw - 24rem)), 3.125rem);
+      }
+    }
+    @container main (width >= 80rem) {
+      font-size: 1rem;
+    }
+  }
+  .\@sm\/main\:\@max-\[1024px\]\/main\:text-\[clamp\(16px\,50px\)\] {
+    @container main (width >= 24rem) {
+      @container main (width < 1024px) {
+        font-size: clamp(1rem, calc(1rem + ((3.125 - 1) / (64 - 24)) * (100cqw - 24rem)), 3.125rem);
+      }
+    }
+  }
+  .\@sm\/main\:\@max-\[1024px\]\:text-\[clamp\(16px\,50px\)\] {
+    @container main (width >= 24rem) {
+      @container (width < 1024px) {
+        font-size: clamp(1rem, calc(1rem + ((3.125 - 1) / (64 - 24)) * (100cqw - 24rem)), 3.125rem);
+      }
+    }
+  }
   .\@md\:text-\[clamp\(16px\,50px\)\] {
-    @container (width >= 28rem) {
-      @container (width < 80rem) {
+    @container  (width >= 28rem) {
+      @container  (width < 80rem) {
         font-size: clamp(1rem, calc(1rem + ((3.125 - 1) / (80 - 28)) * (100cqw - 28rem)), 3.125rem);
       }
     }
-    @container (width >= 80rem) {
+    @container  (width >= 80rem) {
       font-size: 3.125rem;
+    }
+  }
+  .\@md\:\@max-\[1024\]\:text-\[clamp\(16px\,50px\)\] {
+    @container (width >= 28rem) {
+      @container (width < 1024) {
+        font-size: clamp(1rem, calc(1rem + ((3.125 - 1) / (64 - 28)) * (100cqw - 28rem)), 3.125rem);
+      }
+    }
+  }
+  .\@md\:\@max-\[1024px\]\:text-\[clamp\(16px\,50px\)\] {
+    @container (width >= 28rem) {
+      @container (width < 1024px) {
+        font-size: clamp(1rem, calc(1rem + ((3.125 - 1) / (64 - 28)) * (100cqw - 28rem)), 3.125rem);
+      }
     }
   }
 }

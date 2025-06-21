@@ -324,7 +324,9 @@ const clampwind = (opts = {}) => {
                 return;
               }
 
-              const screenValues = Object.values(containerScreens);              
+              const screenValues = Object.values(containerScreens);   
+              const containerNameMatches = mediaNode.params.match(/^([^\s(]+)\s*\(/)
+              const containerName = containerNameMatches ? containerNameMatches[1].trim() : ''
               
               // 1) Create upper breakpoints 
               if (mediaNode.params.includes('>')) {
@@ -332,15 +334,15 @@ const clampwind = (opts = {}) => {
                 const minContainer = mediaNode.params.match(/>=?([^)]+)/)[1].trim()
                 const maxContainer = screenValues[screenValues.length - 1];
 
-                const innerCQ = postcss.atRule({ name: 'container', params: `(width < ${maxContainer})` });
+                const innerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width < ${maxContainer})` });
                 const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
                 innerCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
 
-                const outerCQ = postcss.atRule({ name: 'container', params: `(width >= ${minContainer})` });
+                const outerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width >= ${minContainer})` });
                 outerCQ.append(innerCQ);
                 newContainerQueries.push(outerCQ);
 
-                const upperCQ = postcss.atRule({ name: 'container', params: `(width >= ${maxContainer})` });
+                const upperCQ = postcss.atRule({ name: 'container', params: `${containerName} (width >= ${maxContainer})` });
                 upperCQ.append(
                   postcss.decl({ prop: decl.prop, value: upper })
                 );
@@ -354,15 +356,15 @@ const clampwind = (opts = {}) => {
                 const minContainer = screenValues[0];
                 const maxContainer = mediaNode.params.match(/<([^)]+)/)[1].trim()
 
-                const lowerCQ = postcss.atRule({ name: 'container', params: `(width < ${minContainer})` });
+                const lowerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width < ${minContainer})` });
                 lowerCQ.append(postcss.decl({ prop: decl.prop, value: lower }));
                 newContainerQueries.push(lowerCQ);
 
-                const innerCQ = postcss.atRule({ name: 'container', params: mediaNode.params });
+                const innerCQ = postcss.atRule({ name: 'container', params: `${containerName} ${mediaNode.params}` });
                 const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
                 innerCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
 
-                const outerCQ = postcss.atRule({ name: 'container', params: `(width >= ${minContainer})` });
+                const outerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width >= ${minContainer})` });
                 outerCQ.append(innerCQ);
                 newContainerQueries.push(outerCQ);
 
