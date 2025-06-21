@@ -118,7 +118,7 @@ const generateClamp = (
 
   const widthUnit = containerQuery ? `100cqw` : `100vw`;
 
-  const slopeInt = `((${upperInt} - ${lowerInt}) / (${maxScreenInt} - ${minScreenInt}))`;
+  const slopeInt = parseFloat(((upperInt - lowerInt) / (maxScreenInt - minScreenInt)).toFixed(4));
   const clamp = `clamp(${min}, calc(${lower} + ${slopeInt} * (${widthUnit} - ${minScreen})), ${max})`;
 
   return clamp;
