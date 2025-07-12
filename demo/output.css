@@ -1,5 +1,4 @@
 /*! tailwindcss v4.1.7 | MIT License | https://tailwindcss.com */
-@layer properties;
 @layer theme, base, components, utilities;
 @layer theme {
   :root, :host {
@@ -8,7 +7,6 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-gray-200: oklch(92.8% 0.006 264.531);
-    --spacing: 1px;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
   }
@@ -159,51 +157,12 @@
   }
 }
 @layer utilities {
-  .\@container\/main {
-    container-type: inline-size;
-    container-name: main;
-  }
   .\@container {
     container-type: inline-size;
   }
-  .border {
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-  }
-  .text-\[clamp\(16px\,50px\)\] {
-    @media (width < 40rem) {
-      font-size: 1rem;
-    }
-    @media (width >= 40rem) {
-      @media (width < 96rem) {
-        font-size: clamp(1rem, calc(1rem + 0.0379 * (100vw - 40rem)), 3.125rem);
-      }
-    }
-    @media (width >= 96rem) {
-      font-size: 3.125rem;
-    }
-  }
-  .lg\:leading-2 {
-    @media (width >= 64rem) {
-      --tw-leading: calc(var(--spacing) * 2);
-      line-height: calc(var(--spacing) * 2);
-    }
-  }
-  .\@sm\/main\:\@max-\[1024px\]\/main\:text-\[clamp\(16px\,50px\)\] {
-    @container main (width >= 24rem) {
-      @container main (width < 1024px) {
-        font-size: clamp(1rem, calc(1rem + 0.0531 * (100cqw - 24rem)), 3.125rem);
-      }
-    }
-  }
-  .\@md\:text-\[clamp\(16px\,50px\)\] {
-    @container  (width >= 28rem) {
-      @container  (width < 80rem) {
-        font-size: clamp(1rem, calc(1rem + 0.0409 * (100cqw - 28rem)), 3.125rem);
-      }
-    }
-    @container  (width >= 80rem) {
-      font-size: 3.125rem;
+  .\@max-md\:text-\[clamp\(16px\,50px\)\] {
+    @container  (width < 28rem) {
+      font-size: clamp(1rem, calc(1rem + 0.1771 * (100cqw - 16rem)), 3.125rem);
     }
   }
 }
@@ -213,21 +172,4 @@
 ::backdrop,
 ::file-selector-button {
   border-color: var(--color-gray-200, currentcolor);
-}
-@property --tw-border-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
-@property --tw-leading {
-  syntax: "*";
-  inherits: false;
-}
-@layer properties {
-  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
-    *, ::before, ::after, ::backdrop {
-      --tw-border-style: solid;
-      --tw-leading: initial;
-    }
-  }
 }

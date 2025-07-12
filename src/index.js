@@ -199,7 +199,7 @@ const clampwind = (opts = {}) => {
           containerScreens = convertSortScreens(containerScreens, rootFontSize);
 
           // MARK: - - No MQ
-          // No-media rules: generate from smallest to largest breakpoint and outerMQ bounds
+          // No-media rules: generate clamp from smallest to largest breakpoint
           noMediaQueries.forEach(({ ruleNode, declNodes }) => {
             declNodes.forEach(decl => {
 
@@ -214,37 +214,15 @@ const clampwind = (opts = {}) => {
               const minScreen = screenValues[0];
               const maxScreen = screenValues[screenValues.length - 1];
 
-              // 1) prepend lower bound
-              const lowerMQ = postcss.atRule({ name: 'media', params: `(width < ${minScreen})` });
-              lowerMQ.append(postcss.decl({ prop: decl.prop, value: lower }));
-              ruleNode.insertBefore(
-                decl,
-                lowerMQ
-              );
-
-              // 2) nested media block
-              const innerMQ = postcss.atRule({ name: 'media', params: `(width < ${maxScreen})` });
               const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
-              innerMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+              ruleNode.append(postcss.decl({ prop: decl.prop, value: clamp }));
 
-              const outerMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
-              outerMQ.append(innerMQ);
-              ruleNode.append(outerMQ);
-
-              // 3) upper bound
-              const upperMQ = postcss.atRule({ name: 'media', params: `(width >= ${maxScreen})` });
-              upperMQ.append(
-                postcss.decl({ prop: decl.prop, value: upper })
-              );
-              ruleNode.append(upperMQ);
-
-              // 4) remove original clamp decl
               decl.remove();
             });
           });
 
           // MARK: - - Single MQ
-          // Single media queries: generate from the defined media query breakpoint to the upper or lower bound depending on the direction
+          // Single media queries: generate clamp from the defined media query breakpoint to the smallest or largest breakpoint depending on the direction
           singleMediaQueries.forEach(({ mediaNode, declNodes }) => {
             const newMediaQueries = [];
             
@@ -265,19 +243,11 @@ const clampwind = (opts = {}) => {
                 const minScreen = mediaNode.params.match(/>=?([^)]+)/)[1].trim()
                 const maxScreen = screenValues[screenValues.length - 1];
 
-                const innerMQ = postcss.atRule({ name: 'media', params: `(width < ${maxScreen})` });
+                const singleMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
                 const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
-                innerMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
 
-                const outerMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
-                outerMQ.append(innerMQ);
-                newMediaQueries.push(outerMQ);
-
-                const upperMQ = postcss.atRule({ name: 'media', params: `(width >= ${maxScreen})` });
-                upperMQ.append(
-                  postcss.decl({ prop: decl.prop, value: upper })
-                );
-                newMediaQueries.push(upperMQ);
+                singleMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+                newMediaQueries.push(singleMQ);
 
                 decl.remove();
 
@@ -287,17 +257,11 @@ const clampwind = (opts = {}) => {
                 const minScreen = screenValues[0];
                 const maxScreen = mediaNode.params.match(/<([^)]+)/)[1].trim()
 
-                const lowerMQ = postcss.atRule({ name: 'media', params: `(width < ${minScreen})` });
-                lowerMQ.append(postcss.decl({ prop: decl.prop, value: lower }));
-                newMediaQueries.push(lowerMQ);
-
-                const innerMQ = postcss.atRule({ name: 'media', params: mediaNode.params });
+                const singleMQ = postcss.atRule({ name: 'media', params: mediaNode.params });
                 const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
-                innerMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
-
-                const outerMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
-                outerMQ.append(innerMQ);
-                newMediaQueries.push(outerMQ);
+                
+                singleMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+                newMediaQueries.push(singleMQ);
 
                 decl.remove();
 
@@ -311,7 +275,7 @@ const clampwind = (opts = {}) => {
           });
 
           // MARK: - - Single CQ
-          // Single container queries: generate from the defined container query breakpoint to the upper or lower bound depending on the direction
+          // Single container queries: generate clamp from the defined container query breakpoint to the smallest or largest breakpoint depending on the direction
           singleContainerQueries.forEach(({ mediaNode, declNodes }) => {
             const newContainerQueries = [];
             
@@ -334,19 +298,11 @@ const clampwind = (opts = {}) => {
                 const minContainer = mediaNode.params.match(/>=?([^)]+)/)[1].trim()
                 const maxContainer = screenValues[screenValues.length - 1];
 
-                const innerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width < ${maxContainer})` });
+                const singleCQ = postcss.atRule({ name: 'container', params: `${containerName} (width >= ${minContainer})` });
                 const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
-                innerCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
-
-                const outerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width >= ${minContainer})` });
-                outerCQ.append(innerCQ);
-                newContainerQueries.push(outerCQ);
-
-                const upperCQ = postcss.atRule({ name: 'container', params: `${containerName} (width >= ${maxContainer})` });
-                upperCQ.append(
-                  postcss.decl({ prop: decl.prop, value: upper })
-                );
-                newContainerQueries.push(upperCQ);
+                
+                singleCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+                newContainerQueries.push(singleCQ);
 
                 decl.remove();
 
@@ -356,17 +312,11 @@ const clampwind = (opts = {}) => {
                 const minContainer = screenValues[0];
                 const maxContainer = mediaNode.params.match(/<([^)]+)/)[1].trim()
 
-                const lowerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width < ${minContainer})` });
-                lowerCQ.append(postcss.decl({ prop: decl.prop, value: lower }));
-                newContainerQueries.push(lowerCQ);
-
-                const innerCQ = postcss.atRule({ name: 'container', params: `${containerName} ${mediaNode.params}` });
+                const singleCQ = postcss.atRule({ name: 'container', params: `${containerName} ${mediaNode.params}` });
                 const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
-                innerCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
-
-                const outerCQ = postcss.atRule({ name: 'container', params: `${containerName} (width >= ${minContainer})` });
-                outerCQ.append(innerCQ);
-                newContainerQueries.push(outerCQ);
+                
+                singleCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+                newContainerQueries.push(singleCQ);
 
                 decl.remove();
 
@@ -380,7 +330,7 @@ const clampwind = (opts = {}) => {
           });
 
           // MARK: - - Double MQ
-          // Nested-media queries: generate from between the two defined media query breakpoints
+          // Nested-media queries: generate clamp between the two defined media query breakpoints
           doubleNestedMediaQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
             declNodes.forEach(decl => { 
 
@@ -404,7 +354,7 @@ const clampwind = (opts = {}) => {
           });
 
           // MARK: - - Double CQ
-          // Nested-container queries: generate from between the two defined container query breakpoints
+          // Nested-container queries: generate clamp between the two defined container query breakpoints
           doubleNestedContainerQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
             declNodes.forEach(decl => { 
 
