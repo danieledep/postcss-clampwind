@@ -15,11 +15,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.6"
-  },
-  "peerDependencies": {
-    "tailwindcss": ">=3.4.6"
+    "postcss": "^8.4.39"
   },
   "keywords": [
     "tailwindcss",
