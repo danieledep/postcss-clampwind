@@ -157,12 +157,27 @@
   }
 }
 @layer utilities {
-  .\@container {
-    container-type: inline-size;
+  .container {
+    width: 100%;
+    @media (width >= 40rem) {
+      max-width: 40rem;
+    }
+    @media (width >= 48rem) {
+      max-width: 48rem;
+    }
+    @media (width >= 64rem) {
+      max-width: 64rem;
+    }
+    @media (width >= 80rem) {
+      max-width: 80rem;
+    }
+    @media (width >= 96rem) {
+      max-width: 96rem;
+    }
   }
-  .\@max-md\:text-\[clamp\(16px\,50px\)\] {
-    @container  (width < 28rem) {
-      font-size: clamp(1rem, calc(1rem + 0.1771 * (100cqw - 16rem)), 3.125rem);
+  .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
+    @media (width >= 48rem) {
+      font-size: clamp(1rem, calc(1rem + 0.0443 * (100vw - 48rem)), 3.125rem);
     }
   }
 }
