@@ -176,6 +176,11 @@
       max-width: 96rem;
     }
   }
+  .md\:pt-\[clamp\(16\%\,200\)\] {
+    @media (width >= 48rem) {
+      padding-top:  clamp(16%, 200) /* Invalid clamp() values */;
+    }
+  }
   .md\:pt-\[clamp\(16\,200\)\] {
     @media (width >= 48rem) {
       padding-top: clamp(4rem, calc(4rem + 0.9583 * (100vw - 48rem)), 50rem);

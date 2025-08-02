@@ -48,12 +48,12 @@ const clampwind = (opts = {}) => {
   };
 
   // Helper function to process clamp declarations
-  const processClampDeclaration = (decl, minScreen, maxScreen, isContainer = false, result) => {
+  const processClampDeclaration = (decl, minScreen, maxScreen, isContainer = false) => {
     const args = extractTwoValidClampArgs(decl.value);
     const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize, customProperties));
 
     if (!args || !lower || !upper) {
-      result.warn('Invalid clamp() values', { node: decl });
+      console.warn('Invalid clamp() values', { node: decl });
       decl.value = ` ${decl.value} /* Invalid clamp() values */`;
       return false;
     }
@@ -192,7 +192,7 @@ const clampwind = (opts = {}) => {
 
               if (minScreen && maxScreen) {
                 clampDecls.forEach(decl => {
-                  processClampDeclaration(decl, minScreen, maxScreen, false, atRule.root().result);
+                  processClampDeclaration(decl, minScreen, maxScreen, false);
                 });
               }
               return;
@@ -217,7 +217,7 @@ const clampwind = (opts = {}) => {
                   const minScreen = match[1].trim();
                   const maxScreen = screenValues[screenValues.length - 1];
                   
-                  processClampDeclaration(decl, minScreen, maxScreen, false, atRule.root().result);
+                  processClampDeclaration(decl, minScreen, maxScreen, false);
                 }
               }
               // Lower breakpoints (< syntax) - process in place
@@ -227,7 +227,7 @@ const clampwind = (opts = {}) => {
                   const minScreen = screenValues[0];
                   const maxScreen = match[1].trim();
                   
-                  processClampDeclaration(decl, minScreen, maxScreen, false, atRule.root().result);
+                  processClampDeclaration(decl, minScreen, maxScreen, false);
                 }
               }
             });
@@ -290,7 +290,7 @@ const clampwind = (opts = {}) => {
 
               if (minContainer && maxContainer) {
                 clampDecls.forEach(decl => {
-                  processClampDeclaration(decl, minContainer, maxContainer, true, atRule.root().result);
+                  processClampDeclaration(decl, minContainer, maxContainer, true);
                 });
               }
               return;
@@ -317,7 +317,7 @@ const clampwind = (opts = {}) => {
                   const minContainer = match[1].trim();
                   const maxContainer = screenValues[screenValues.length - 1];
                   
-                  processClampDeclaration(decl, minContainer, maxContainer, true, atRule.root().result);
+                  processClampDeclaration(decl, minContainer, maxContainer, true);
                 }
               }
               // Lower breakpoints (< syntax) - process in place
@@ -327,7 +327,7 @@ const clampwind = (opts = {}) => {
                   const minContainer = screenValues[0];
                   const maxContainer = match[1].trim();
                   
-                  processClampDeclaration(decl, minContainer, maxContainer, true, atRule.root().result);
+                  processClampDeclaration(decl, minContainer, maxContainer, true);
                 }
               }
             });
@@ -366,7 +366,7 @@ const clampwind = (opts = {}) => {
               source: decl.source
             });
             
-            if (processClampDeclaration(newDecl, minScreen, maxScreen, false, rule.root().result)) {
+            if (processClampDeclaration(newDecl, minScreen, maxScreen, false)) {
               rule.insertAfter(decl, newDecl);
               decl.remove();
             }
