@@ -7,6 +7,7 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-gray-200: oklch(92.8% 0.006 264.531);
+    --spacing: 4px;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
   }
@@ -157,12 +158,39 @@
   }
 }
 @layer utilities {
-  .\@container {
-    container-type: inline-size;
+  .container {
+    width: 100%;
+    @media (width >= 40rem) {
+      max-width: 40rem;
+    }
+    @media (width >= 48rem) {
+      max-width: 48rem;
+    }
+    @media (width >= 64rem) {
+      max-width: 64rem;
+    }
+    @media (width >= 80rem) {
+      max-width: 80rem;
+    }
+    @media (width >= 96rem) {
+      max-width: 96rem;
+    }
   }
-  .\@max-md\:text-\[clamp\(16px\,50px\)\] {
-    @container  (width < 28rem) {
-      font-size: clamp(1rem, calc(1rem + 0.1771 * (100cqw - 16rem)), 3.125rem);
+  .md\:pt-\[clamp\(16\%\,200\)\] {
+    @media (width >= 48rem) {
+      padding-top:  clamp(16%, 200) /* Invalid clamp() values */;
+    }
+  }
+  .md\:pt-\[clamp\(16\,200\)\] {
+    @media (width >= 48rem) {
+      padding-top: clamp(4rem, calc(4rem + 0.9583 * (100vw - 48rem)), 50rem);
+    }
+  }
+  .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
+    @media (width >= 48rem) {
+      @media (width < 64rem) {
+        font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
+      }
     }
   }
 }
@@ -172,4 +200,11 @@
 ::backdrop,
 ::file-selector-button {
   border-color: var(--color-gray-200, currentcolor);
+}
+:root {
+  --spacing: 4px;
+}
+.h2 {
+  font-size: 40px;
+  line-height: 48px;
 }
