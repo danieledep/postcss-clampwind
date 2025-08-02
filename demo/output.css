@@ -7,6 +7,7 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-gray-200: oklch(92.8% 0.006 264.531);
+    --spacing: 4px;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
   }
@@ -175,9 +176,16 @@
       max-width: 96rem;
     }
   }
+  .md\:pt-\[clamp\(16\,200\)\] {
+    @media (width >= 48rem) {
+      padding-top: clamp(4rem, calc(4rem + 0.9583 * (100vw - 48rem)), 50rem);
+    }
+  }
   .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
     @media (width >= 48rem) {
-      font-size: clamp(1rem, calc(1rem + 0.0443 * (100vw - 48rem)), 3.125rem);
+      @media (width < 64rem) {
+        font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
+      }
     }
   }
 }
@@ -187,4 +195,11 @@
 ::backdrop,
 ::file-selector-button {
   border-color: var(--color-gray-200, currentcolor);
+}
+:root {
+  --spacing: 4px;
+}
+.h2 {
+  font-size: 40px;
+  line-height: 48px;
 }

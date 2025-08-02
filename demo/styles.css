@@ -18,21 +18,21 @@
 
 
   :root {
-
+    --spacing: 4px;
   }
 
 
 @theme static {
-
+  --spacing: 4px;
  /* --breakpoint-3xl: 120rem; 
  --container-sm: 120rem;*/
 }
 
 @theme {
-	--spacing: 1px;
+
 }
 
-@utility h2 {
+.h2 {
   font-size: 40px;
   line-height: 48px;
 }

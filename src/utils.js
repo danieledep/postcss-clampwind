@@ -39,7 +39,7 @@ const formatProperty = (value) => {
  * If the value is a custom property, it will be converted to the value of the custom property
  * @param {string} value - The value to convert to rem
  * @param {number} rootFontSize - The root font size
- * @param {number} spacingSize - The spacing size
+ * @param {string} spacingSize - The spacing size
  * @param {Object} customProperties - The custom properties
  * @returns {string} The converted value
  */
@@ -49,7 +49,16 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
   const fallbackValue = value.includes('var(') && value.includes(',') ? value.replace(/var\([^,]+,\s*([^)]+)\)/, '$1') : null;
 
   if (!unit) {
-    return `${value * spacingSize}rem`;
+    const spacingSizeInt = parseFloat(spacingSize);
+    const spacingUnit = extractUnit(spacingSize);
+    
+    if (spacingUnit === "px") {
+      return `${value * spacingSizeInt / rootFontSize}rem`;
+    }
+
+    if (spacingUnit === "rem") {
+      return `${value * spacingSizeInt}rem`;
+    }
   }
 
   if (unit === "px") {
@@ -89,7 +98,7 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
  * @param {string} minScreen - The minimum screen size
  * @param {string} maxScreen - The maximum screen size
  * @param {number} rootFontSize - The root font size
- * @param {number} spacingSize - The spacing size
+ * @param {string} spacingSize - The spacing size
  * @param {boolean} containerQuery - Whether to use container queries
  * @returns {string} The generated clamp function,
  */
@@ -99,7 +108,7 @@ const generateClamp = (
   minScreen,
   maxScreen,
   rootFontSize = 16,
-  spacingSize = 0.25,
+  spacingSize = "1px",
   containerQuery = false
 ) => {
   const maxScreenInt = parseFloat(
@@ -108,7 +117,6 @@ const generateClamp = (
   const minScreenInt = parseFloat(
     convertToRem(minScreen, rootFontSize, spacingSize)
   );
-
   const lowerInt = parseFloat(lower);
   const upperInt = parseFloat(upper);
 

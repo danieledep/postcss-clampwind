@@ -4,7 +4,7 @@ import { extractTwoValidClampArgs, convertToRem, generateClamp } from './utils.j
 
 const clampwind = (opts = {}) => {
   let rootFontSize = 16;
-  let spacingSize = 0.25;
+  let spacingSize = "1px";
   let customProperties = {};
   let screens = defaultScreens || {};
   let containerScreens = defaultContainerScreens || {};
@@ -51,13 +51,12 @@ const clampwind = (opts = {}) => {
   const processClampDeclaration = (decl, minScreen, maxScreen, isContainer = false, result) => {
     const args = extractTwoValidClampArgs(decl.value);
     const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize, customProperties));
-    
+
     if (!args || !lower || !upper) {
       result.warn('Invalid clamp() values', { node: decl });
       decl.value = ` ${decl.value} /* Invalid clamp() values */`;
       return false;
     }
-
     const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, isContainer);
     decl.value = clamp;
     return true;
@@ -86,7 +85,7 @@ const clampwind = (opts = {}) => {
               rootFontSize = parseFloat(decl.value);
             }
             if (decl.prop === '--spacing') {
-              spacingSize = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+              spacingSize = decl.value;
             }
             if (decl.prop.startsWith('--')) {
               const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
@@ -97,7 +96,8 @@ const clampwind = (opts = {}) => {
 
         // MARK: AtRule
         AtRule: {
-          // MARK: - - Layers - Collect configuration
+          // MARK: - - Layers
+          // Collect configuration
           layer(atRule) {
             // Default layer
             if (atRule.params === 'default' && !Object.keys(config.defaultLayerBreakpoints).length) {
@@ -125,7 +125,7 @@ const clampwind = (opts = {}) => {
                   rootFontSize = parseFloat(decl.value);
                 }
                 if (decl.prop === '--spacing') {
-                  spacingSize = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+                  spacingSize = decl.value;
                 }
                 if (decl.prop.startsWith('--')) {
                   const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
@@ -135,18 +135,27 @@ const clampwind = (opts = {}) => {
             }
           },
 
-          // MARK: - - Media - Process immediately
+          // MARK: - - Media
+          // Process immediately
           media(atRule) {
             finalizeConfig(); // Ensure config is ready
             
             const isNested = atRule.parent?.type === 'atrule';
             const isSameAtRule = atRule.parent?.name === atRule.name;
 
-            // Find all clamp declarations
+            // Find all clamp declarations directly in this media query
             const clampDecls = [];
-            atRule.walkDecls(decl => {
-              if (extractTwoValidClampArgs(decl.value)) {
-                clampDecls.push(decl);
+            atRule.each(node => {
+              if (node.type === 'decl' && extractTwoValidClampArgs(node.value)) {
+                clampDecls.push(node);
+              }
+              // For rules directly inside this media query
+              else if (node.type === 'rule') {
+                node.each(childNode => {
+                  if (childNode.type === 'decl' && extractTwoValidClampArgs(childNode.value)) {
+                    clampDecls.push(childNode);
+                  }
+                });
               }
             });
 
@@ -154,13 +163,32 @@ const clampwind = (opts = {}) => {
 
             // Handle nested media queries (double MQ)
             if (isNested && isSameAtRule) {
-              const maxScreen = ([atRule.parent.params, atRule.params])
-                .filter(p => p.includes('<'))
-                .map(p => p.match(/<([^)]+)/)?.[1]?.trim())[0];
+              // For double nested media queries, we need to combine the conditions
+              const parentParams = atRule.parent.params;
+              const currentParams = atRule.params;
               
-              const minScreen = ([atRule.parent.params, atRule.params])
-                .filter(p => p.includes('>'))
-                .map(p => p.match(/>=?([^)]+)/)?.[1]?.trim())[0];
+              let minScreen = null;
+              let maxScreen = null;
+              
+              // Extract min from >= conditions
+              if (parentParams.includes('>')) {
+                const match = parentParams.match(/>=?\s*([^)]+)/);
+                if (match) minScreen = match[1].trim();
+              }
+              if (currentParams.includes('>') && !minScreen) {
+                const match = currentParams.match(/>=?\s*([^)]+)/);
+                if (match) minScreen = match[1].trim();
+              }
+              
+              // Extract max from < conditions
+              if (parentParams.includes('<')) {
+                const match = parentParams.match(/<\s*([^)]+)/);
+                if (match) maxScreen = match[1].trim();
+              }
+              if (currentParams.includes('<') && !maxScreen) {
+                const match = currentParams.match(/<\s*([^)]+)/);
+                if (match) maxScreen = match[1].trim();
+              }
 
               if (minScreen && maxScreen) {
                 clampDecls.forEach(decl => {
@@ -173,90 +201,59 @@ const clampwind = (opts = {}) => {
             // Handle invalid nesting
             if (isNested && !isSameAtRule) {
               clampDecls.forEach(decl => {
-                decl.value = ` ${decl.value} /* Invalid nested @media and @container rules */`;
+                decl.value = ` ${decl.value} /* Invalid nested @media rules */`;
               });
               return;
             }
 
             // Handle single media queries
             const screenValues = Object.values(screens);
-            const newMediaQueries = [];
-
+            
             clampDecls.forEach(decl => {
-              // Upper breakpoints (>= syntax)
+              // Upper breakpoints (>= syntax) - process in place
               if (atRule.params.includes('>')) {
-                const match = atRule.params.match(/>=?([^)]+)/);
+                const match = atRule.params.match(/>=?\s*([^)]+)/);
                 if (match) {
                   const minScreen = match[1].trim();
                   const maxScreen = screenValues[screenValues.length - 1];
-
-                  const newAtRule = postcss.atRule({ 
-                    name: 'media', 
-                    params: `(width >= ${minScreen})`,
-                    source: atRule.source
-                  });
                   
-                  const newDecl = postcss.decl({ 
-                    prop: decl.prop, 
-                    value: decl.value,
-                    source: decl.source
-                  });
-                  
-                  if (processClampDeclaration(newDecl, minScreen, maxScreen, false, atRule.root().result)) {
-                    newAtRule.append(newDecl);
-                    newMediaQueries.push(newAtRule);
-                  }
+                  processClampDeclaration(decl, minScreen, maxScreen, false, atRule.root().result);
                 }
               }
-              // Lower breakpoints (< syntax)
+              // Lower breakpoints (< syntax) - process in place
               else if (atRule.params.includes('<')) {
-                const match = atRule.params.match(/<([^)]+)/);
+                const match = atRule.params.match(/<\s*([^)]+)/);
                 if (match) {
                   const minScreen = screenValues[0];
                   const maxScreen = match[1].trim();
-
-                  const newAtRule = postcss.atRule({ 
-                    name: 'media', 
-                    params: atRule.params,
-                    source: atRule.source
-                  });
                   
-                  const newDecl = postcss.decl({ 
-                    prop: decl.prop, 
-                    value: decl.value,
-                    source: decl.source
-                  });
-                  
-                  if (processClampDeclaration(newDecl, minScreen, maxScreen, false, atRule.root().result)) {
-                    newAtRule.append(newDecl);
-                    newMediaQueries.push(newAtRule);
-                  }
+                  processClampDeclaration(decl, minScreen, maxScreen, false, atRule.root().result);
                 }
               }
             });
-
-            // Insert new media queries and remove the old one
-            newMediaQueries.forEach(mq => {
-              atRule.parent.insertBefore(atRule, mq);
-            });
-            
-            if (newMediaQueries.length > 0) {
-              atRule.remove();
-            }
           },
 
-          // MARK: - - Container - Process immediately
+          // MARK: - - Container
+          // Process immediately
           container(atRule) {
             finalizeConfig(); // Ensure config is ready
             
             const isNested = atRule.parent?.type === 'atrule';
             const isSameAtRule = atRule.parent?.name === atRule.name;
 
-            // Find all clamp declarations
+            // Find all clamp declarations directly in this container query
             const clampDecls = [];
-            atRule.walkDecls(decl => {
-              if (extractTwoValidClampArgs(decl.value)) {
-                clampDecls.push(decl);
+            atRule.each(node => {
+              if (node.type === 'decl' && extractTwoValidClampArgs(node.value)) {
+                clampDecls.push(node);
+              }
+              // For rules directly inside this container query
+              else if (node.type === 'rule') {
+                node.each(childNode => {
+                  if (childNode.type === 'decl' && extractTwoValidClampArgs(childNode.value)) {
+                    clampDecls.push(childNode);
+                  }
+                });
               }
             });
 
@@ -264,13 +261,32 @@ const clampwind = (opts = {}) => {
 
             // Handle nested container queries (double CQ)
             if (isNested && isSameAtRule) {
-              const maxContainer = ([atRule.parent.params, atRule.params])
-                .filter(p => p.includes('<'))
-                .map(p => p.match(/<([^)]+)/)?.[1]?.trim())[0];
+              // For double nested container queries, we need to combine the conditions
+              const parentParams = atRule.parent.params;
+              const currentParams = atRule.params;
               
-              const minContainer = ([atRule.parent.params, atRule.params])
-                .filter(p => p.includes('>'))
-                .map(p => p.match(/>=?([^)]+)/)?.[1]?.trim())[0];
+              let minContainer = null;
+              let maxContainer = null;
+              
+              // Extract min from >= conditions
+              if (parentParams.includes('>')) {
+                const match = parentParams.match(/>=?\s*([^)]+)/);
+                if (match) minContainer = match[1].trim();
+              }
+              if (currentParams.includes('>') && !minContainer) {
+                const match = currentParams.match(/>=?\s*([^)]+)/);
+                if (match) minContainer = match[1].trim();
+              }
+              
+              // Extract max from < conditions
+              if (parentParams.includes('<')) {
+                const match = parentParams.match(/<\s*([^)]+)/);
+                if (match) maxContainer = match[1].trim();
+              }
+              if (currentParams.includes('<') && !maxContainer) {
+                const match = currentParams.match(/<\s*([^)]+)/);
+                if (match) maxContainer = match[1].trim();
+              }
 
               if (minContainer && maxContainer) {
                 clampDecls.forEach(decl => {
@@ -283,7 +299,7 @@ const clampwind = (opts = {}) => {
             // Handle invalid nesting
             if (isNested && !isSameAtRule) {
               clampDecls.forEach(decl => {
-                decl.value = ` ${decl.value} /* Invalid nested @media and @container rules */`;
+                decl.value = ` ${decl.value} /* Invalid nested @container rules */`;
               });
               return;
             }
@@ -292,73 +308,34 @@ const clampwind = (opts = {}) => {
             const screenValues = Object.values(containerScreens);
             const containerNameMatches = atRule.params.match(/^([^\s(]+)\s*\(/);
             const containerName = containerNameMatches ? containerNameMatches[1].trim() : '';
-            const newContainerQueries = [];
-
+            
             clampDecls.forEach(decl => {
-              // Upper breakpoints (>= syntax)
+              // Upper breakpoints (>= syntax) - process in place
               if (atRule.params.includes('>')) {
-                const match = atRule.params.match(/>=?([^)]+)/);
+                const match = atRule.params.match(/>=?\s*([^)]+)/);
                 if (match) {
                   const minContainer = match[1].trim();
                   const maxContainer = screenValues[screenValues.length - 1];
-
-                  const newAtRule = postcss.atRule({ 
-                    name: 'container', 
-                    params: `${containerName} (width >= ${minContainer})`,
-                    source: atRule.source
-                  });
                   
-                  const newDecl = postcss.decl({ 
-                    prop: decl.prop, 
-                    value: decl.value,
-                    source: decl.source
-                  });
-                  
-                  if (processClampDeclaration(newDecl, minContainer, maxContainer, true, atRule.root().result)) {
-                    newAtRule.append(newDecl);
-                    newContainerQueries.push(newAtRule);
-                  }
+                  processClampDeclaration(decl, minContainer, maxContainer, true, atRule.root().result);
                 }
               }
-              // Lower breakpoints (< syntax)
+              // Lower breakpoints (< syntax) - process in place
               else if (atRule.params.includes('<')) {
-                const match = atRule.params.match(/<([^)]+)/);
+                const match = atRule.params.match(/<\s*([^)]+)/);
                 if (match) {
                   const minContainer = screenValues[0];
                   const maxContainer = match[1].trim();
-
-                  const newAtRule = postcss.atRule({ 
-                    name: 'container', 
-                    params: `${containerName} ${atRule.params}`,
-                    source: atRule.source
-                  });
                   
-                  const newDecl = postcss.decl({ 
-                    prop: decl.prop, 
-                    value: decl.value,
-                    source: decl.source
-                  });
-                  
-                  if (processClampDeclaration(newDecl, minContainer, maxContainer, true, atRule.root().result)) {
-                    newAtRule.append(newDecl);
-                    newContainerQueries.push(newAtRule);
-                  }
+                  processClampDeclaration(decl, minContainer, maxContainer, true, atRule.root().result);
                 }
               }
             });
-
-            // Insert new container queries and remove the old one
-            newContainerQueries.forEach(cq => {
-              atRule.parent.insertBefore(atRule, cq);
-            });
-            
-            if (newContainerQueries.length > 0) {
-              atRule.remove();
-            }
           }
         },
 
-        // MARK: Rule - Process no-media rules immediately
+        // MARK: Rule
+        // Process no-media rules immediately
         Rule(rule) {
           finalizeConfig(); // Ensure config is ready
           
