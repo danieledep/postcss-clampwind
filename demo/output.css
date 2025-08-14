@@ -183,6 +183,12 @@
   .pt-\[clamp\(18px\,200\)\] {
     padding-top: clamp(1rem, calc(1rem + 0.5431 * (100vw - 40rem)), 44.44444444444444rem);
   }
+  .pt-\[clamp\(var\(--myVar\)\,200\)\] {
+    padding-top: clamp(1.0625rem, calc(1.0625rem + 0.5423 * (100vw - 40rem)), 44.44444444444444rem);
+  }
+  .pt-\[clamp\(var\(--myVar\)s\,200\)\] {
+    padding-top: clamp(var(--myVar)s, 200);
+  }
   .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
     @media (width >= 48rem) {
       @media (width < 64rem) {

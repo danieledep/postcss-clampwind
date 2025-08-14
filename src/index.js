@@ -3,72 +3,73 @@ import { defaultScreens, defaultContainerScreens, formatBreakpointsRegexMatches,
 import { extractTwoValidClampArgs, convertToRem, generateClamp } from './utils.js';
 
 const clampwind = (opts = {}) => {
-  let rootFontSize = 16;
-  let spacingSize = "1px";
-  let customProperties = {};
-  let screens = defaultScreens || {};
-  let containerScreens = defaultContainerScreens || {};
-
-  // Configuration collected from theme layers and root
-  const config = {
-    defaultLayerBreakpoints: {},
-    defaultLayerContainerBreakpoints: {},
-    themeLayerBreakpoints: {},
-    themeLayerContainerBreakpoints: {},
-    rootElementBreakpoints: {},
-    rootElementContainerBreakpoints: {},
-    configReady: false
-  };
-
-  // Helper function to finalize configuration
-  const finalizeConfig = () => {
-    if (config.configReady) return;
-    
-    // Join, convert and sort screens breakpoints from theme, root and layer
-    screens = Object.assign(
-      {},
-      screens,
-      config.defaultLayerBreakpoints,
-      config.rootElementBreakpoints,
-      config.themeLayerBreakpoints
-    );
-    screens = convertSortScreens(screens, rootFontSize);
-
-    // Join, convert and sort container breakpoints from theme, root and layer
-    containerScreens = Object.assign(
-      {},
-      containerScreens,
-      config.defaultLayerContainerBreakpoints,
-      config.rootElementContainerBreakpoints,
-      config.themeLayerContainerBreakpoints
-    );
-    containerScreens = convertSortScreens(containerScreens, rootFontSize);
-    
-    config.configReady = true;
-  };
-
-  // Helper function to process clamp declarations
-  const processClampDeclaration = (decl, minScreen, maxScreen, isContainer = false) => {
-    const args = extractTwoValidClampArgs(decl.value);
-    const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize, customProperties));
-
-    if (!args || !lower || !upper) {
-      console.warn('Invalid clamp() values', { node: decl });
-      decl.value = ` ${decl.value} /* Invalid clamp() values */`;
-      return true;
-    }
-    const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, isContainer);
-    decl.value = clamp;
-    return true;
-  };
-
   return {
     postcssPlugin: 'clampwind',
     prepare() {
+      // Phase 1: Configuration collection
+      let rootFontSize = 16;
+      let spacingSize = "1px";
+      let customProperties = {};
+      let screens = defaultScreens || {};
+      let containerScreens = defaultContainerScreens || {};
+      
+      // Configuration collected from theme layers and root
+      const config = {
+        defaultLayerBreakpoints: {},
+        defaultLayerContainerBreakpoints: {},
+        themeLayerBreakpoints: {},
+        themeLayerContainerBreakpoints: {},
+        rootElementBreakpoints: {},
+        rootElementContainerBreakpoints: {},
+        configReady: false
+      };
+
+      // Helper function to finalize configuration
+      const finalizeConfig = () => {
+        if (config.configReady) return;
+        
+        // Join, convert and sort screens breakpoints from theme, root and layer
+        screens = Object.assign(
+          {},
+          screens,
+          config.defaultLayerBreakpoints,
+          config.rootElementBreakpoints,
+          config.themeLayerBreakpoints
+        );
+        screens = convertSortScreens(screens, rootFontSize);
+
+        // Join, convert and sort container breakpoints from theme, root and layer
+        containerScreens = Object.assign(
+          {},
+          containerScreens,
+          config.defaultLayerContainerBreakpoints,
+          config.rootElementContainerBreakpoints,
+          config.themeLayerContainerBreakpoints
+        );
+        containerScreens = convertSortScreens(containerScreens, rootFontSize);
+        
+        config.configReady = true;
+      };
+
+      // Helper function to process clamp declarations
+      const processClampDeclaration = (decl, minScreen, maxScreen, isContainer = false) => {
+        const args = extractTwoValidClampArgs(decl.value);
+        const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize, customProperties));
+
+        if (!args || !lower || !upper) {
+          console.warn('Invalid clamp() values', { node: decl });
+          decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+          return true;
+        }
+        const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, isContainer);
+        decl.value = clamp;
+        return true;
+      };
+
       return {
-        // MARK: Once 
-        // Collect configuration before any other rules are processed
+        // Phase 1: Collect all configuration first
         Once(root) {
+          // First pass: Collect all configuration from :root
           root.walkDecls(decl => {
             if (decl.parent?.selector === ':root') {
               if (decl.prop.startsWith('--breakpoint-')) {
@@ -94,25 +95,23 @@ const clampwind = (opts = {}) => {
               }
             }
           });
-        },
 
-
-        // MARK: AtRule
-        AtRule: {
-          // MARK: - - Layers
-          // Collect configuration
-          layer(atRule) {
+          // Second pass: Collect configuration from layers
+          root.walkAtRules('layer', atRule => {
             // Default layer
-            if (atRule.params === 'default' && !Object.keys(config.defaultLayerBreakpoints).length) {
-              const css = atRule.source.input.css;
-              const matches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g) || [];
-              config.defaultLayerBreakpoints = formatBreakpointsRegexMatches(matches);
+            if (atRule.params === 'default') {
+              if (!Object.keys(config.defaultLayerBreakpoints).length) {
+                const css = atRule.source.input.css;
+                const matches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g) || [];
+                config.defaultLayerBreakpoints = formatBreakpointsRegexMatches(matches);
+              }
+              if (!Object.keys(config.defaultLayerContainerBreakpoints).length) {
+                const css = atRule.source.input.css;
+                const matches = css.match(/--container-[^:]+:\s*[^;]+/g) || [];
+                config.defaultLayerContainerBreakpoints = formatContainerBreakpointsRegexMatches(matches);
+              }
             }
-            if (atRule.params === 'default' && !Object.keys(config.defaultLayerContainerBreakpoints).length) {
-              const css = atRule.source.input.css;
-              const matches = css.match(/--container-[^:]+:\s*[^;]+/g) || [];
-              config.defaultLayerContainerBreakpoints = formatContainerBreakpointsRegexMatches(matches);
-            }
+            
             // Theme layer
             if (atRule.params === 'theme') {
               atRule.walkDecls(decl => {
@@ -136,12 +135,16 @@ const clampwind = (opts = {}) => {
                 }
               });
             }
-          },
+          });
 
-          // MARK: - - Media
+          // Finalize configuration after collection
+          finalizeConfig();
+        },
+
+        // Phase 2: Process nodes with collected configuration
+        AtRule: {
+          // Process media queries
           media(atRule) {
-            finalizeConfig(); // Ensure config is ready
-            
             const isNested = atRule.parent?.type === 'atrule';
             const isSameAtRule = atRule.parent?.name === atRule.name;
 
@@ -165,7 +168,6 @@ const clampwind = (opts = {}) => {
 
             // Handle nested media queries (double MQ)
             if (isNested && isSameAtRule) {
-              // For double nested media queries, we need to combine the conditions
               const parentParams = atRule.parent.params;
               const currentParams = atRule.params;
               
@@ -212,7 +214,7 @@ const clampwind = (opts = {}) => {
             const screenValues = Object.values(screens);
             
             clampDecls.forEach(decl => {
-              // Upper breakpoints (>= syntax) - process in place
+              // Upper breakpoints (>= syntax)
               if (atRule.params.includes('>')) {
                 const match = atRule.params.match(/>=?\s*([^)]+)/);
                 if (match) {
@@ -222,7 +224,7 @@ const clampwind = (opts = {}) => {
                   processClampDeclaration(decl, minScreen, maxScreen, false);
                 }
               }
-              // Lower breakpoints (< syntax) - process in place
+              // Lower breakpoints (< syntax)
               else if (atRule.params.includes('<')) {
                 const match = atRule.params.match(/<\s*([^)]+)/);
                 if (match) {
@@ -235,11 +237,8 @@ const clampwind = (opts = {}) => {
             });
           },
 
-          // MARK: - - Container
-          // Process immediately
+          // Process container queries
           container(atRule) {
-            finalizeConfig(); // Ensure config is ready
-            
             const isNested = atRule.parent?.type === 'atrule';
             const isSameAtRule = atRule.parent?.name === atRule.name;
 
@@ -263,7 +262,6 @@ const clampwind = (opts = {}) => {
 
             // Handle nested container queries (double CQ)
             if (isNested && isSameAtRule) {
-              // For double nested container queries, we need to combine the conditions
               const parentParams = atRule.parent.params;
               const currentParams = atRule.params;
               
@@ -308,11 +306,9 @@ const clampwind = (opts = {}) => {
 
             // Handle single container queries
             const screenValues = Object.values(containerScreens);
-            const containerNameMatches = atRule.params.match(/^([^\s(]+)\s*\(/);
-            const containerName = containerNameMatches ? containerNameMatches[1].trim() : '';
             
             clampDecls.forEach(decl => {
-              // Upper breakpoints (>= syntax) - process in place
+              // Upper breakpoints (>= syntax)
               if (atRule.params.includes('>')) {
                 const match = atRule.params.match(/>=?\s*([^)]+)/);
                 if (match) {
@@ -322,7 +318,7 @@ const clampwind = (opts = {}) => {
                   processClampDeclaration(decl, minContainer, maxContainer, true);
                 }
               }
-              // Lower breakpoints (< syntax) - process in place
+              // Lower breakpoints (< syntax)
               else if (atRule.params.includes('<')) {
                 const match = atRule.params.match(/<\s*([^)]+)/);
                 if (match) {
@@ -336,10 +332,8 @@ const clampwind = (opts = {}) => {
           }
         },
 
-        // MARK: Rule
+        // Process regular rules
         Rule(rule) {
-          finalizeConfig(); // Ensure config is ready
-          
           // Skip if this rule has @media children (they'll be handled separately)
           const hasMediaChild = (rule.nodes || []).some(
             n => n.type === 'atrule' && (n.name === 'media' || n.name === 'container')
