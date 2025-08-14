@@ -180,19 +180,13 @@
       max-width: 120rem;
     }
   }
-  .pt-\[clamp\(18px\,200\)\] {
-    padding-top: clamp(1rem, calc(1rem + 0.5431 * (100vw - 40rem)), 44.44444444444444rem);
-  }
   .pt-\[clamp\(var\(--myVar\)\,200\)\] {
-    padding-top: clamp(1.0625rem, calc(1.0625rem + 0.5423 * (100vw - 40rem)), 44.44444444444444rem);
-  }
-  .pt-\[clamp\(var\(--myVar\)s\,200\)\] {
-    padding-top: clamp(var(--myVar)s, 200);
+    padding-top: clamp(0.9444rem, calc(0.9444rem + 0.5437 * (100vw - 40rem)), 44.4444rem);
   }
   .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
     @media (width >= 48rem) {
       @media (width < 64rem) {
-        font-size: clamp(0.8888888888888888rem, calc(0.8888888888888888rem + 0.1181 * (100vw - 48rem)), 2.7777777777777777rem);
+        font-size: clamp(0.8889rem, calc(0.8889rem + 0.0262 * (100vw - 48rem)), 2.7778rem);
       }
     }
   }

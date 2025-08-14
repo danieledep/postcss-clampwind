@@ -53,16 +53,16 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
     const spacingUnit = extractUnit(spacingSize);
     
     if (spacingUnit === "px") {
-      return `${value * spacingSizeInt / rootFontSize}rem`;
+      return `${parseFloat(value * spacingSizeInt / rootFontSize).toFixed(4)}rem`;
     }
 
     if (spacingUnit === "rem") {
-      return `${value * spacingSizeInt}rem`;
+      return `${parseFloat(value * spacingSizeInt).toFixed(4)}rem`;
     }
   }
 
   if (unit === "px") {
-    return `${value.replace("px", "") / rootFontSize}rem`;
+    return `${parseFloat(value.replace("px", "") / rootFontSize).toFixed(4)}rem`;
   }
 
   if (unit === "rem") {
@@ -77,11 +77,11 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
     const fallbackUnit = extractUnit(fallbackValue);
 
     if (!fallbackUnit) {
-      return `${fallbackValue * spacingSize}rem`;
+      return `${parseFloat(fallbackValue * spacingSize).toFixed(4)}rem`;
     }
 
     if (fallbackUnit === "px") {
-      return `${fallbackValue.replace("px", "") / rootFontSize}rem`;
+      return `${parseFloat(fallbackValue.replace("px", "") / rootFontSize).toFixed(4)}rem`;
     }
     if (fallbackUnit === "rem") {
       return fallbackValue;

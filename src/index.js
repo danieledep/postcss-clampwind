@@ -6,7 +6,7 @@ const clampwind = (opts = {}) => {
   return {
     postcssPlugin: 'clampwind',
     prepare() {
-      // Phase 1: Configuration collection
+      // Configuration variables
       let rootFontSize = 16;
       let spacingSize = "1px";
       let customProperties = {};
@@ -21,7 +21,99 @@ const clampwind = (opts = {}) => {
         themeLayerContainerBreakpoints: {},
         rootElementBreakpoints: {},
         rootElementContainerBreakpoints: {},
+        configCollected: false,
         configReady: false
+      };
+
+      // Helper function to collect configuration
+      const collectConfig = (root) => {
+        if (config.configCollected) return;
+        
+        // Collect root font size from :root
+        root.walkDecls(decl => {
+          if (decl.parent?.selector === ':root') {
+            if (decl.prop === 'font-size' && decl.value.includes('px')) {
+              rootFontSize = parseFloat(decl.value);
+            }
+            if (decl.prop === '--text-base' && decl.value.includes('px')) {
+              rootFontSize = parseFloat(decl.value);
+            }
+          }
+        });
+
+        // Collect custom properties from :root
+        root.walkDecls(decl => {
+          if (decl.parent?.selector === ':root') {
+            if (decl.prop.startsWith('--breakpoint-')) {
+              const key = decl.prop.replace('--breakpoint-', '');
+              config.rootElementBreakpoints[key] = decl.value;
+            }
+            if (decl.prop.startsWith('--container-')) {
+              const key = decl.prop.replace('--container-', '@');
+              config.rootElementContainerBreakpoints[key] = decl.value;
+            }
+            if (decl.prop === '--spacing') {
+              spacingSize = decl.value;
+            }
+            if (decl.prop.startsWith('--')) {
+              const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+              if (value) customProperties[decl.prop] = value;
+            }
+          }
+        });
+
+        // Collect root font size from theme layer
+        root.walkAtRules('layer', atRule => {
+          if (atRule.params === 'theme') {
+            atRule.walkDecls(decl => {
+              if (decl.prop === '--text-base' && decl.value.includes('px')) {
+                rootFontSize = parseFloat(decl.value);
+              }
+            });
+          }
+        });
+
+        // Collect custom properties from layers
+        root.walkAtRules('layer', atRule => {
+          // Default layer
+          if (atRule.params === 'default') {
+            if (!Object.keys(config.defaultLayerBreakpoints).length) {
+              atRule.walkDecls(decl => {
+                if (decl.prop.startsWith('--breakpoint-')) {
+                  const key = decl.prop.replace('--breakpoint-', '');
+                  config.defaultLayerBreakpoints[key] = decl.value;
+                }
+                if (decl.prop.startsWith('--container-')) {
+                  const key = decl.prop.replace('--container-', '@');
+                  config.defaultLayerContainerBreakpoints[key] = decl.value;
+                }
+              });
+            }
+          }
+          
+          // Theme layer
+          if (atRule.params === 'theme') {
+            atRule.walkDecls(decl => {
+              if (decl.prop.startsWith('--breakpoint-')) {
+                const key = decl.prop.replace('--breakpoint-', '');
+                config.themeLayerBreakpoints[key] = decl.value;
+              }
+              if (decl.prop.startsWith('--container-')) {
+                const key = decl.prop.replace('--container-', '@');
+                config.themeLayerContainerBreakpoints[key] = decl.value;
+              }
+              if (decl.prop === '--spacing') {
+                spacingSize = decl.value;
+              }
+              if (decl.prop.startsWith('--')) {
+                const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+                if (value) customProperties[decl.prop] = value;
+              }
+            });
+          }
+        });
+        
+        config.configCollected = true;
       };
 
       // Helper function to finalize configuration
@@ -67,100 +159,23 @@ const clampwind = (opts = {}) => {
       };
 
       return {
-        // Phase 1: Collect all configuration first
-        Once(root) {
-          // First pass: Collect all configuration from :root
-          root.walkDecls(decl => {
-            if (decl.parent?.selector === ':root') {
-              if (decl.prop.startsWith('--breakpoint-')) {
-                const key = decl.prop.replace('--breakpoint-', '');
-                config.rootElementBreakpoints[key] = decl.value;
-              }
-              if (decl.prop.startsWith('--container-')) {
-                const key = decl.prop.replace('--container-', '@');
-                config.rootElementContainerBreakpoints[key] = decl.value;
-              }
-              if (decl.prop === '--text-base' && decl.value.includes('px')) {
-                rootFontSize = parseFloat(decl.value);
-              }
-              if (decl.prop === 'font-size' && decl.value.includes('px')) {
-                rootFontSize = parseFloat(decl.value);
-              }
-              if (decl.prop === '--spacing') {
-                spacingSize = decl.value;
-              }
-              if (decl.prop.startsWith('--')) {
-                const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
-                if (value) customProperties[decl.prop] = value;
-              }
-            }
-          });
-
-          // Second pass: Collect configuration from layers
-          root.walkAtRules('layer', atRule => {
-            // Default layer
-            if (atRule.params === 'default') {
-              if (!Object.keys(config.defaultLayerBreakpoints).length) {
-                const css = atRule.source.input.css;
-                const matches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g) || [];
-                config.defaultLayerBreakpoints = formatBreakpointsRegexMatches(matches);
-              }
-              if (!Object.keys(config.defaultLayerContainerBreakpoints).length) {
-                const css = atRule.source.input.css;
-                const matches = css.match(/--container-[^:]+:\s*[^;]+/g) || [];
-                config.defaultLayerContainerBreakpoints = formatContainerBreakpointsRegexMatches(matches);
-              }
-            }
-            
-            // Theme layer
-            if (atRule.params === 'theme') {
-              atRule.walkDecls(decl => {
-                if (decl.prop.startsWith('--breakpoint-')) {
-                  const key = decl.prop.replace('--breakpoint-', '');
-                  config.themeLayerBreakpoints[key] = decl.value;
-                }
-                if (decl.prop.startsWith('--container-')) {
-                  const key = decl.prop.replace('--container-', '@');
-                  config.themeLayerContainerBreakpoints[key] = decl.value;
-                }
-                if (decl.prop === '--text-base' && decl.value.includes('px')) {
-                  rootFontSize = parseFloat(decl.value);
-                }
-                if (decl.prop === '--spacing') {
-                  spacingSize = decl.value;
-                }
-                if (decl.prop.startsWith('--')) {
-                  const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
-                  if (value) customProperties[decl.prop] = value;
-                }
-              });
-            }
-          });
-
-          // Finalize configuration after collection
+        // Use OnceExit to ensure Tailwind has generated its content
+        OnceExit(root, { result }) {
+          // Collect all configuration after Tailwind has processed
+          collectConfig(root);
           finalizeConfig();
-        },
-
-        // Phase 2: Process nodes with collected configuration
-        AtRule: {
+          
+          // Now process all clamp declarations in the entire tree
           // Process media queries
-          media(atRule) {
+          root.walkAtRules('media', atRule => {
             const isNested = atRule.parent?.type === 'atrule';
             const isSameAtRule = atRule.parent?.name === atRule.name;
 
-            // Find all clamp declarations directly in this media query
+            // Find all clamp declarations
             const clampDecls = [];
-            atRule.each(node => {
-              if (node.type === 'decl' && extractTwoValidClampArgs(node.value)) {
-                clampDecls.push(node);
-              }
-              // For rules directly inside this media query
-              else if (node.type === 'rule') {
-                node.each(childNode => {
-                  if (childNode.type === 'decl' && extractTwoValidClampArgs(childNode.value)) {
-                    clampDecls.push(childNode);
-                  }
-                });
+            atRule.walkDecls(decl => {
+              if (extractTwoValidClampArgs(decl.value)) {
+                clampDecls.push(decl);
               }
             });
 
@@ -235,26 +250,18 @@ const clampwind = (opts = {}) => {
                 }
               }
             });
-          },
+          });
 
           // Process container queries
-          container(atRule) {
+          root.walkAtRules('container', atRule => {
             const isNested = atRule.parent?.type === 'atrule';
             const isSameAtRule = atRule.parent?.name === atRule.name;
 
-            // Find all clamp declarations directly in this container query
+            // Find all clamp declarations
             const clampDecls = [];
-            atRule.each(node => {
-              if (node.type === 'decl' && extractTwoValidClampArgs(node.value)) {
-                clampDecls.push(node);
-              }
-              // For rules directly inside this container query
-              else if (node.type === 'rule') {
-                node.each(childNode => {
-                  if (childNode.type === 'decl' && extractTwoValidClampArgs(childNode.value)) {
-                    clampDecls.push(childNode);
-                  }
-                });
+            atRule.walkDecls(decl => {
+              if (extractTwoValidClampArgs(decl.value)) {
+                clampDecls.push(decl);
               }
             });
 
@@ -329,42 +336,36 @@ const clampwind = (opts = {}) => {
                 }
               }
             });
-          }
-        },
-
-        // Process regular rules
-        Rule(rule) {
-          // Skip if this rule has @media children (they'll be handled separately)
-          const hasMediaChild = (rule.nodes || []).some(
-            n => n.type === 'atrule' && (n.name === 'media' || n.name === 'container')
-          );
-          if (hasMediaChild) return;
-
-          // Find clamp declarations and process them immediately
-          const clampDecls = [];
-          rule.walkDecls(decl => {
-            if (extractTwoValidClampArgs(decl.value)) {
-              clampDecls.push(decl);
-            }
           });
 
-          if (clampDecls.length === 0) return;
-
-          const screenValues = Object.values(screens);
-          const minScreen = screenValues[0];
-          const maxScreen = screenValues[screenValues.length - 1];
-
-          clampDecls.forEach(decl => {
-            const newDecl = postcss.decl({ 
-              prop: decl.prop, 
-              value: decl.value,
-              source: decl.source
-            });
-            
-            if (processClampDeclaration(newDecl, minScreen, maxScreen, false)) {
-              rule.insertAfter(decl, newDecl);
-              decl.remove();
+          // Process regular rules (not inside media/container queries)
+          root.walkRules(rule => {
+            // Skip if inside a media or container query (they were already processed)
+            let parent = rule.parent;
+            while (parent) {
+              if (parent.type === 'atrule' && (parent.name === 'media' || parent.name === 'container')) {
+                return; // Skip this rule, it's inside a media/container query
+              }
+              parent = parent.parent;
             }
+
+            // Find and process clamp declarations
+            const clampDecls = [];
+            rule.walkDecls(decl => {
+              if (extractTwoValidClampArgs(decl.value)) {
+                clampDecls.push(decl);
+              }
+            });
+
+            if (clampDecls.length === 0) return;
+
+            const screenValues = Object.values(screens);
+            const minScreen = screenValues[0];
+            const maxScreen = screenValues[screenValues.length - 1];
+
+            clampDecls.forEach(decl => {
+              processClampDeclaration(decl, minScreen, maxScreen, false);
+            });
           });
         }
       };
