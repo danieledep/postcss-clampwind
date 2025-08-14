@@ -10,6 +10,7 @@
     --spacing: 4px;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
+    --breakpoint-3xl: 120rem;
   }
 }
 @layer base {
@@ -175,21 +176,23 @@
     @media (width >= 96rem) {
       max-width: 96rem;
     }
-  }
-  .md\:pt-\[clamp\(16\%\,200\)\] {
-    @media (width >= 48rem) {
-      padding-top:  clamp(16%, 200) /* Invalid clamp() values */;
+    @media (width >= 120rem) {
+      max-width: 120rem;
     }
   }
-  .md\:pt-\[clamp\(16\,200\)\] {
-    @media (width >= 48rem) {
-      padding-top: clamp(4rem, calc(4rem + 0.9583 * (100vw - 48rem)), 50rem);
-    }
+  .pt-\[clamp\(1rem\,200\)\] {
+    padding-top: clamp(1rem, calc(1rem + 0.5431 * (100vw - 40rem)), 44.44444444444444rem);
+  }
+  .pt-\[clamp\(18px\,200\)\] {
+    padding-top: clamp(1rem, calc(1rem + 0.5431 * (100vw - 40rem)), 44.44444444444444rem);
+  }
+  .pt-\[clamp\(var\(--myVar\)\,200\)\] {
+    padding-top: clamp(1.0625rem, calc(1.0625rem + 0.5423 * (100vw - 40rem)), 44.44444444444444rem);
   }
   .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
     @media (width >= 48rem) {
       @media (width < 64rem) {
-        font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
+        font-size: clamp(0.8888888888888888rem, calc(0.8888888888888888rem + 0.1181 * (100vw - 48rem)), 2.7777777777777777rem);
       }
     }
   }
@@ -202,7 +205,9 @@
   border-color: var(--color-gray-200, currentcolor);
 }
 :root {
-  --spacing: 4px;
+  --spacing: 1px;
+  --myVar: 17px;
+  font-size: 18px;
 }
 .h2 {
   font-size: 40px;

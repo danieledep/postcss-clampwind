@@ -18,14 +18,17 @@
 
 
   :root {
-    --spacing: 4px;
+    --spacing: 1px;
+    --myVar: 17px;
+    font-size: 18px;
   }
 
 
 @theme static {
   --spacing: 4px;
- /* --breakpoint-3xl: 120rem; 
- --container-sm: 120rem;*/
+
+ --breakpoint-3xl: 120rem; 
+ /* --container-sm: 120rem;*/
 }
 
 @theme {
