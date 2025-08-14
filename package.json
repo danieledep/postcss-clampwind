@@ -14,9 +14,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "peerDependencies": {
-    "postcss": "^8.4.39"
-  },
   "keywords": [
     "clampwind",
     "postcss-plugin",

@@ -1,4 +1,3 @@
-import postcss from 'postcss';
 import { defaultScreens, defaultContainerScreens, formatBreakpointsRegexMatches, formatContainerBreakpointsRegexMatches, convertSortScreens } from './screens.js';
 import { extractTwoValidClampArgs, convertToRem, generateClamp } from './utils.js';
 
@@ -8,7 +7,7 @@ const clampwind = (opts = {}) => {
     prepare() {
       // Configuration variables
       let rootFontSize = 16;
-      let spacingSize = "1px";
+      let spacingSize = "0.25rem";
       let customProperties = {};
       let screens = defaultScreens || {};
       let containerScreens = defaultContainerScreens || {};
