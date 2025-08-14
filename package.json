@@ -14,12 +14,15 @@
   "publishConfig": {
     "access": "public"
   },
-  "devDependencies": {
+  "peerDependencies": {
     "postcss": "^8.4.39"
   },
   "keywords": [
+    "clampwind",
+    "postcss-plugin",
     "tailwindcss",
     "fluid",
-    "variants"
+    "variants",
+    "clamp"
   ]
 }
