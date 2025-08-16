@@ -20,7 +20,6 @@
   :root {
     --spacing: 1px;
     --myVar: 17px;
-    font-size: 18px;
   }
 
 
@@ -28,6 +27,8 @@
   --spacing: 4px;
 
  --breakpoint-3xl: 120rem; 
+ --breakpoint-clamp-min: 768px;
+ --breakpoint-clamp-max: 1024px;
  /* --container-sm: 120rem;*/
 }
 

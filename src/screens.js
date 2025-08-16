@@ -26,69 +26,7 @@ const defaultContainerScreens = {
   '@7xl': '80rem'  // 1280px
 };
 
-/**
- * Format the breakpoints matches
- * @param {Array<string>} breakpointsMatches - Array of strings in format '--breakpoint-{name}: {value}'
- * @returns {Object} Object with breakpoint names as keys and values as values
- */
-const formatBreakpointsRegexMatches = (matches) => {
-  return matches.reduce((acc, match) => {
-    const [, name, value] = match.match(/--breakpoint-([^:]+):\s*([^;]+)/);
-    acc[name.trim()] = value.trim();
-    return acc;
-  }, {});
-};
-
-/**
- * Format the container breakpoints matches
- * @param {Array<string>} breakpointsMatches - Array of strings in format '--container-{name}: {value}'
- * @returns {Object} Object with container breakpoint names as keys and values as values
- */
-const formatContainerBreakpointsRegexMatches = (matches) => {
-  return matches.reduce((acc, match) => {
-    const [, name, value] = match.match(/--container-([^:]+):\s*([^;]+)/);
-    acc[`@${name.trim()}`] = value.trim();
-    return acc;
-  }, {});
-};
-
-/**
- * Convert and sort the screens
- * @param {Object} screens - The base screens object
- * @param {number} rootFontSize - The root font size
- * @returns {Object} The sorted screens
- */
-const convertSortScreens = (screens, rootFontSize = 16) => {
-  // First convert all values to rem
-  const convertedScreens = Object.entries(screens).reduce((acc, [key, value]) => {
-    // If value is in px, convert to rem
-    if (value.includes('px')) {
-      const pxValue = parseFloat(value);
-      acc[key] = `${pxValue / rootFontSize}rem`;
-    } else {
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
-
-  // Then sort by rem values
-  const sortedKeys = Object.keys(convertedScreens).sort((a, b) => {
-    const aValue = parseFloat(convertedScreens[a]);
-    const bValue = parseFloat(convertedScreens[b]);
-    return aValue - bValue;
-  });
-
-  // Create new object with sorted keys
-  return sortedKeys.reduce((acc, key) => {
-    acc[key] = convertedScreens[key];
-    return acc;
-  }, {});
-};
-
 export {
   defaultScreens,
-  defaultContainerScreens,
-  formatBreakpointsRegexMatches,
-  formatContainerBreakpointsRegexMatches,
-  convertSortScreens
+  defaultContainerScreens
 };

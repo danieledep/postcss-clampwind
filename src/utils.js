@@ -1,4 +1,21 @@
 /**
+ * Smart rounding function that removes unnecessary decimal places
+ * @param {number} value - The value to round
+ * @param {number} maxDecimals - Maximum decimal places (default: 4)
+ * @returns {string} The rounded value as a string
+ */
+const smartRound = (value, maxDecimals = 4) => {
+  // Convert to string with max precision first
+  const precise = value.toFixed(maxDecimals);
+  
+  // Remove trailing zeros after decimal point
+  const trimmed = precise.replace(/\.?0+$/, '');
+  
+  // If we removed everything after decimal, return the integer part
+  return trimmed || '0';
+};
+
+/**
  * Extract two clamp args from a string
  * @param {string} value - The value to extract the clamp args from
  * @returns {Array<string>} The lower and upper clamp args
@@ -53,16 +70,16 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
     const spacingUnit = extractUnit(spacingSize);
     
     if (spacingUnit === "px") {
-      return `${parseFloat(value * spacingSizeInt / rootFontSize).toFixed(4)}rem`;
+      return `${smartRound(value * spacingSizeInt / rootFontSize)}rem`;
     }
 
     if (spacingUnit === "rem") {
-      return `${parseFloat(value * spacingSizeInt).toFixed(4)}rem`;
+      return `${smartRound(value * spacingSizeInt)}rem`;
     }
   }
 
   if (unit === "px") {
-    return `${parseFloat(value.replace("px", "") / rootFontSize).toFixed(4)}rem`;
+    return `${smartRound(value.replace("px", "") / rootFontSize)}rem`;
   }
 
   if (unit === "rem") {
@@ -70,18 +87,18 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
   }
 
   if (customProperties[formattedProperty]) {
-    return `${customProperties[formattedProperty]}rem`;
+    return customProperties[formattedProperty];
   }
 
   if (formattedProperty && !customProperties[formattedProperty] && fallbackValue) {
     const fallbackUnit = extractUnit(fallbackValue);
 
     if (!fallbackUnit) {
-      return `${parseFloat(fallbackValue * spacingSize).toFixed(4)}rem`;
+      return `${smartRound(fallbackValue * spacingSize)}rem`;
     }
 
     if (fallbackUnit === "px") {
-      return `${parseFloat(fallbackValue.replace("px", "") / rootFontSize).toFixed(4)}rem`;
+      return `${smartRound(fallbackValue.replace("px", "") / rootFontSize)}rem`;
     }
     if (fallbackUnit === "rem") {
       return fallbackValue;
@@ -126,10 +143,31 @@ const generateClamp = (
 
   const widthUnit = containerQuery ? `100cqw` : `100vw`;
 
-  const slopeInt = parseFloat(((upperInt - lowerInt) / (maxScreenInt - minScreenInt)).toFixed(4));
+  const slopeInt = smartRound((upperInt - lowerInt) / (maxScreenInt - minScreenInt));
   const clamp = `clamp(${min}, calc(${lower} + ${slopeInt} * (${widthUnit} - ${minScreen})), ${max})`;
 
   return clamp;
 };
 
-export { extractTwoValidClampArgs, convertToRem, generateClamp };
+/**
+ * Convert and sort the screens
+ * @param {Object} screens - The base screens object
+ * @returns {Object} The sorted screens
+ */
+const sortScreens = (screens) => {
+
+  // Sort by rem values
+  const sortedKeys = Object.keys(screens).sort((a, b) => {
+    const aValue = parseFloat(screens[a]);
+    const bValue = parseFloat(screens[b]);
+    return aValue - bValue;
+  });
+
+  // Create new object with sorted keys
+  return sortedKeys.reduce((acc, key) => {
+    acc[key] = screens[key];
+    return acc;
+  }, {});
+};
+
+export { extractTwoValidClampArgs, convertToRem, generateClamp, sortScreens };

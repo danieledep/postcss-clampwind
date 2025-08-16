@@ -11,6 +11,8 @@
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
     --breakpoint-3xl: 120rem;
+    --breakpoint-clamp-min: 768px;
+    --breakpoint-clamp-max: 1024px;
   }
 }
 @layer base {
@@ -161,6 +163,12 @@
 @layer utilities {
   .container {
     width: 100%;
+    @media (width >= 768px) {
+      max-width: 768px;
+    }
+    @media (width >= 1024px) {
+      max-width: 1024px;
+    }
     @media (width >= 40rem) {
       max-width: 40rem;
     }
@@ -180,13 +188,20 @@
       max-width: 120rem;
     }
   }
-  .pt-\[clamp\(var\(--myVar\)\,200\)\] {
-    padding-top: clamp(0.9444rem, calc(0.9444rem + 0.5437 * (100vw - 40rem)), 44.4444rem);
+  .max-lg\:text-\[clamp\(1rem\,50px\)\] {
+    @media (width < 64rem) {
+      font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
+    }
   }
-  .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
+  .md\:text-\[clamp\(1rem\,50px\)\] {
+    @media (width >= 48rem) {
+      font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
+    }
+  }
+  .md\:max-lg\:text-\[clamp\(1rem\,50px\)\] {
     @media (width >= 48rem) {
       @media (width < 64rem) {
-        font-size: clamp(0.8889rem, calc(0.8889rem + 0.0262 * (100vw - 48rem)), 2.7778rem);
+        font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
       }
     }
   }
@@ -201,7 +216,6 @@
 :root {
   --spacing: 1px;
   --myVar: 17px;
-  font-size: 18px;
 }
 .h2 {
   font-size: 40px;
