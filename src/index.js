@@ -255,24 +255,44 @@ const clampwind = (opts = {}) => {
                 let minScreen = null;
                 let maxScreen = null;
 
-                // Extract min from >= conditions
-                if (parentParams.includes(">")) {
-                  const match = parentParams.match(/>=?\s*([^)]+)/);
-                  if (match) minScreen = match[1].trim();
+                // Extract min from >= conditions or min-width
+                if (parentParams.includes(">") || parentParams.includes("min-width")) {
+                  let match = parentParams.match(/>=?\s*([^),\s]+)/);
+                  if (match) {
+                    minScreen = match[1].trim();
+                  } else {
+                    match = parentParams.match(/min-width:\s*([^),\s]+)/);
+                    if (match) minScreen = match[1].trim();
+                  }
                 }
-                if (currentParams.includes(">") && !minScreen) {
-                  const match = currentParams.match(/>=?\s*([^)]+)/);
-                  if (match) minScreen = match[1].trim();
+                if (!minScreen && (currentParams.includes(">") || currentParams.includes("min-width"))) {
+                  let match = currentParams.match(/>=?\s*([^),\s]+)/);
+                  if (match) {
+                    minScreen = match[1].trim();
+                  } else {
+                    match = currentParams.match(/min-width:\s*([^),\s]+)/);
+                    if (match) minScreen = match[1].trim();
+                  }
                 }
 
-                // Extract max from < conditions
-                if (parentParams.includes("<")) {
-                  const match = parentParams.match(/<\s*([^)]+)/);
-                  if (match) maxScreen = match[1].trim();
+                // Extract max from < conditions or max-width
+                if (parentParams.includes("<") || parentParams.includes("max-width")) {
+                  let match = parentParams.match(/<\s*([^),\s]+)/);
+                  if (match) {
+                    maxScreen = match[1].trim();
+                  } else {
+                    match = parentParams.match(/max-width:\s*([^),\s]+)/);
+                    if (match) maxScreen = match[1].trim();
+                  }
                 }
-                if (currentParams.includes("<") && !maxScreen) {
-                  const match = currentParams.match(/<\s*([^)]+)/);
-                  if (match) maxScreen = match[1].trim();
+                if (!maxScreen && (currentParams.includes("<") || currentParams.includes("max-width"))) {
+                  let match = currentParams.match(/<\s*([^),\s]+)/);
+                  if (match) {
+                    maxScreen = match[1].trim();
+                  } else {
+                    match = currentParams.match(/max-width:\s*([^),\s]+)/);
+                    if (match) maxScreen = match[1].trim();
+                  }
                 }
 
                 if (minScreen && maxScreen) {
@@ -295,25 +315,31 @@ const clampwind = (opts = {}) => {
               const screenValues = Object.values(screens);
               const currentParams = decl.parent.params;
 
-              // Upper breakpoints (>= syntax)
-              if (currentParams.includes(">")) {
-                const match = currentParams.match(/>=?\s*([^)]+)/);
+              // Upper breakpoints (>= syntax or min-width)
+              if (currentParams.includes(">") || currentParams.includes("min-width")) {
+                let match = currentParams.match(/>=?\s*([^),\s]+)/);
+                if (!match) {
+                  match = currentParams.match(/min-width:\s*([^),\s]+)/);
+                }
+                
                 if (match) {
                   const minScreen = match[1].trim();
-                  const maxScreen =
-                    defaultClampRange.max ||
+                  const maxScreen = 
+                    defaultClampRange.max || 
                     screenValues[screenValues.length - 1];
-
                   processClampDeclaration(decl, minScreen, maxScreen, false);
                 }
               }
-              // Lower breakpoints (< syntax)
-              else if (currentParams.includes("<")) {
-                const match = currentParams.match(/<\s*([^)]+)/);
+              // Lower breakpoints (< syntax or max-width)
+              else if (currentParams.includes("<") || currentParams.includes("max-width")) {
+                let match = currentParams.match(/<\s*([^),\s]+)/);
+                if (!match) {
+                  match = currentParams.match(/max-width:\s*([^),\s]+)/);
+                }
+                
                 if (match) {
                   const minScreen = defaultClampRange.min || screenValues[0];
                   const maxScreen = match[1].trim();
-
                   processClampDeclaration(decl, minScreen, maxScreen, false);
                 }
               }
@@ -347,23 +373,35 @@ const clampwind = (opts = {}) => {
                 let minContainer = null;
                 let maxContainer = null;
 
-                // Extract min from >= conditions
-                if (parentParams.includes(">")) {
-                  const match = parentParams.match(/>=?\s*([^)]+)/);
+                // Extract min from >= conditions or min-width
+                if (parentParams.includes(">") || parentParams.includes("min-width")) {
+                  let match = parentParams.match(/>=?\s*([^),\s]+)/);
+                  if (!match) {
+                    match = parentParams.match(/min-width:\s*([^),\s]+)/);
+                  }
                   if (match) minContainer = match[1].trim();
                 }
-                if (currentParams.includes(">") && !minContainer) {
-                  const match = currentParams.match(/>=?\s*([^)]+)/);
+                if (!minContainer && (currentParams.includes(">") || currentParams.includes("min-width"))) {
+                  let match = currentParams.match(/>=?\s*([^),\s]+)/);
+                  if (!match) {
+                    match = currentParams.match(/min-width:\s*([^),\s]+)/);
+                  }
                   if (match) minContainer = match[1].trim();
                 }
 
-                // Extract max from < conditions
-                if (parentParams.includes("<")) {
-                  const match = parentParams.match(/<\s*([^)]+)/);
+                // Extract max from < conditions or max-width
+                if (parentParams.includes("<") || parentParams.includes("max-width")) {
+                  let match = parentParams.match(/<\s*([^),\s]+)/);
+                  if (!match) {
+                    match = parentParams.match(/max-width:\s*([^),\s]+)/);
+                  }
                   if (match) maxContainer = match[1].trim();
                 }
-                if (currentParams.includes("<") && !maxContainer) {
-                  const match = currentParams.match(/<\s*([^)]+)/);
+                if (!maxContainer && (currentParams.includes("<") || currentParams.includes("max-width"))) {
+                  let match = currentParams.match(/<\s*([^),\s]+)/);
+                  if (!match) {
+                    match = currentParams.match(/max-width:\s*([^),\s]+)/);
+                  }
                   if (match) maxContainer = match[1].trim();
                 }
 
@@ -392,14 +430,17 @@ const clampwind = (opts = {}) => {
               const containerValues = Object.values(containerScreens);
               const currentParams = decl.parent.params;
 
-              // Upper breakpoints (>= syntax)
-              if (currentParams.includes(">")) {
-                const match = currentParams.match(/>=?\s*([^)]+)/);
+              // Upper breakpoints (>= syntax or min-width)
+              if (currentParams.includes(">") || currentParams.includes("min-width")) {
+                let match = currentParams.match(/>=?\s*([^),\s]+)/);
+                if (!match) {
+                  match = currentParams.match(/min-width:\s*([^),\s]+)/);
+                }
+                
                 if (match) {
                   const minContainer = match[1].trim();
-                  const maxContainer =
+                  const maxContainer = 
                     containerValues[containerValues.length - 1];
-
                   processClampDeclaration(
                     decl,
                     minContainer,
@@ -408,13 +449,16 @@ const clampwind = (opts = {}) => {
                   );
                 }
               }
-              // Lower breakpoints (< syntax)
-              else if (currentParams.includes("<")) {
-                const match = currentParams.match(/<\s*([^)]+)/);
+              // Lower breakpoints (< syntax or max-width)
+              else if (currentParams.includes("<") || currentParams.includes("max-width")) {
+                let match = currentParams.match(/<\s*([^),\s]+)/);
+                if (!match) {
+                  match = currentParams.match(/max-width:\s*([^),\s]+)/);
+                }
+                
                 if (match) {
                   const minContainer = containerValues[0];
                   const maxContainer = match[1].trim();
-
                   processClampDeclaration(
                     decl,
                     minContainer,
