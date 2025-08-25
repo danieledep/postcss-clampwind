@@ -6,6 +6,7 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
+    --color-amber-50: oklch(98.7% 0.022 95.277);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --spacing: 4px;
     --default-font-family: var(--font-sans);
@@ -147,6 +148,9 @@
   ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
     padding-block: 0;
   }
+  ::-webkit-calendar-picker-indicator {
+    line-height: 1;
+  }
   :-moz-ui-invalid {
     box-shadow: none;
   }
@@ -190,11 +194,6 @@
   }
   .max-lg\:text-\[clamp\(1rem\,50px\)\] {
     @media (width < 64rem) {
-      font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
-    }
-  }
-  .md\:text-\[clamp\(1rem\,50px\)\] {
-    @media (width >= 48rem) {
       font-size: clamp(1rem, calc(1rem + 0.1328 * (100vw - 48rem)), 3.125rem);
     }
   }
