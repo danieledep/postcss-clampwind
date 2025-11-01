@@ -10,8 +10,8 @@ import {
 
 const clampwind = (opts = {}) => {
   return {
-    postcssPlugin: "clampwind",
-    prepare() {
+    postcssPlugin: "postcss-clampwind",
+    prepare(result) {
       // Configuration variables
       let rootFontSize = 16;
       let spacingSize = "0.25rem";
@@ -205,8 +205,15 @@ const clampwind = (opts = {}) => {
         );
 
         if (!args || !lower || !upper) {
-          console.warn("Invalid clamp() values", { node: decl });
-          decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+          result.warn(
+            `Invalid clamp() values: "${decl.value}". Expected format: clamp(min, preferred, max)`,
+            { 
+              node: decl,
+              word: decl.value 
+            }
+          );
+          
+          decl.value = `${decl.value} /* Invalid clamp() values */`;
           return true;
         }
         const clamp = generateClamp(
