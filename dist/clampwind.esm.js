@@ -129,6 +129,28 @@ var sortScreens = (screens) => {
     return acc;
   }, {});
 };
+var extractMaxValue = (params) => {
+  if (!params) return null;
+  let match = params.match(/<\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+  match = params.match(/max-width:\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+  match = params.match(/not\s+all\s+and\s*\(\s*min-width:\s*([^),\s]+)\s*\)/);
+  if (match) return match[1].trim();
+  return null;
+};
+var extractMinValue = (params) => {
+  if (!params) return null;
+  let match = params.match(/>=?\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+  match = params.match(/min-width:\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+  match = params.match(/not\s+all\s+and\s*\(\s*max-width:\s*([^),\s]+)\s*\)/);
+  if (match) {
+    return match[1].trim();
+  }
+  return null;
+};
 
 // src/clampwind.js
 var clampwind = (opts = {}) => {
@@ -314,197 +336,130 @@ var clampwind = (opts = {}) => {
         decl.value = clamp;
         return true;
       };
+      const getNestedStructure = (atRule) => {
+        const isNested = atRule.parent?.type === "atrule" && atRule.parent?.name === "media";
+        const hasNestedMedia = atRule.nodes?.some(
+          (node) => node.type === "atrule" && node.name === "media"
+        );
+        return { isNested, hasNestedMedia };
+      };
+      const processMediaQuery = (atRule, parentAtRule = null) => {
+        const clampDecls = [];
+        atRule.walkDecls((decl) => {
+          if (extractTwoValidClampArgs(decl.value)) {
+            clampDecls.push(decl);
+          }
+        });
+        if (!clampDecls.length) return;
+        const screenValues = Object.values(screens);
+        if (parentAtRule) {
+          const currentParams = atRule.params;
+          const parentParams = parentAtRule.params;
+          const minScreen = extractMinValue(parentParams) || extractMinValue(currentParams);
+          const maxScreen = extractMaxValue(parentParams) || extractMaxValue(currentParams);
+          if (minScreen && maxScreen) {
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minScreen, maxScreen, false);
+            });
+          }
+        } else {
+          const currentParams = atRule.params;
+          const minValue = extractMinValue(currentParams);
+          const maxValue = extractMaxValue(currentParams);
+          if (minValue && !maxValue) {
+            const minScreen = minValue;
+            const maxScreen = defaultClampRange.max || screenValues[screenValues.length - 1];
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minScreen, maxScreen, false);
+            });
+          } else if (maxValue && !minValue) {
+            const minScreen = defaultClampRange.min || screenValues[0];
+            const maxScreen = maxValue;
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minScreen, maxScreen, false);
+            });
+          } else if (minValue && maxValue) {
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minValue, maxValue, false);
+            });
+          }
+        }
+      };
+      const processContainerQuery = (atRule, parentAtRule = null) => {
+        const clampDecls = [];
+        atRule.walkDecls((decl) => {
+          if (extractTwoValidClampArgs(decl.value)) {
+            clampDecls.push(decl);
+          }
+        });
+        if (!clampDecls.length) return;
+        const containerValues = Object.values(containerScreens);
+        if (parentAtRule) {
+          const currentParams = atRule.params;
+          const parentParams = parentAtRule.params;
+          const minContainer = extractMinValue(parentParams) || extractMinValue(currentParams);
+          const maxContainer = extractMaxValue(parentParams) || extractMaxValue(currentParams);
+          if (minContainer && maxContainer) {
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minContainer, maxContainer, true);
+            });
+          }
+        } else {
+          const currentParams = atRule.params;
+          const minValue = extractMinValue(currentParams);
+          const maxValue = extractMaxValue(currentParams);
+          if (minValue && !maxValue) {
+            const minContainer = minValue;
+            const maxContainer = containerValues[containerValues.length - 1];
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minContainer, maxContainer, true);
+            });
+          } else if (maxValue && !minValue) {
+            const minContainer = containerValues[0];
+            const maxContainer = maxValue;
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minContainer, maxContainer, true);
+            });
+          } else if (minValue && maxValue) {
+            clampDecls.forEach((decl) => {
+              processClampDeclaration(decl, minValue, maxValue, true);
+            });
+          }
+        }
+      };
       return {
         // Use OnceExit to ensure Tailwind has generated its content
         OnceExit(root, { result }) {
           collectConfig(root);
           finalizeConfig();
+          const processedAtRules = /* @__PURE__ */ new WeakSet();
           root.walkAtRules("media", (atRule) => {
-            const clampDecls = [];
-            atRule.walkDecls((decl) => {
-              if (extractTwoValidClampArgs(decl.value)) {
-                clampDecls.push(decl);
-              }
-            });
-            if (!clampDecls.length) return;
-            clampDecls.forEach((decl) => {
-              const isNested = decl.parent?.type === "atrule" && decl.parent?.parent.type === "atrule";
-              const isSameAtRule = decl.parent?.name === decl.parent?.parent.name;
-              if (isNested && isSameAtRule) {
-                const currentParams2 = decl.parent.params;
-                const parentParams = decl.parent.parent.params;
-                let minScreen = null;
-                let maxScreen = null;
-                if (parentParams && (parentParams.includes(">") || parentParams.includes("min-width"))) {
-                  let match = parentParams.match(/>=?\s*([^),\s]+)/);
-                  if (match) {
-                    minScreen = match[1].trim();
-                  } else {
-                    match = parentParams.match(/min-width:\s*([^),\s]+)/);
-                    if (match) minScreen = match[1].trim();
-                  }
-                }
-                if (!minScreen && (currentParams2 && (currentParams2.includes(">") || currentParams2.includes("min-width")))) {
-                  let match = currentParams2.match(/>=?\s*([^),\s]+)/);
-                  if (match) {
-                    minScreen = match[1].trim();
-                  } else {
-                    match = currentParams2.match(/min-width:\s*([^),\s]+)/);
-                    if (match) minScreen = match[1].trim();
-                  }
-                }
-                if (parentParams && (parentParams.includes("<") || parentParams.includes("max-width"))) {
-                  let match = parentParams.match(/<\s*([^),\s]+)/);
-                  if (match) {
-                    maxScreen = match[1].trim();
-                  } else {
-                    match = parentParams.match(/max-width:\s*([^),\s]+)/);
-                    if (match) maxScreen = match[1].trim();
-                  }
-                }
-                if (!maxScreen && (currentParams2 && (currentParams2.includes("<") || currentParams2.includes("max-width")))) {
-                  let match = currentParams2.match(/<\s*([^),\s]+)/);
-                  if (match) {
-                    maxScreen = match[1].trim();
-                  } else {
-                    match = currentParams2.match(/max-width:\s*([^),\s]+)/);
-                    if (match) maxScreen = match[1].trim();
-                  }
-                }
-                if (minScreen && maxScreen) {
-                  clampDecls.forEach((decl2) => {
-                    processClampDeclaration(decl2, minScreen, maxScreen, false);
-                  });
-                }
-                return;
-              }
-              if (isNested && !isSameAtRule) {
-                clampDecls.forEach((decl2) => {
-                  decl2.value = ` ${decl2.value} /* Invalid nested @media rules */`;
-                });
-                return;
-              }
-              const screenValues = Object.values(screens);
-              const currentParams = decl.parent.params;
-              if (currentParams && (currentParams.includes(">") || currentParams.includes("min-width"))) {
-                let match = currentParams.match(/>=?\s*([^),\s]+)/);
-                if (!match) {
-                  match = currentParams.match(/min-width:\s*([^),\s]+)/);
-                }
-                if (match) {
-                  const minScreen = match[1].trim();
-                  const maxScreen = defaultClampRange.max || screenValues[screenValues.length - 1];
-                  processClampDeclaration(decl, minScreen, maxScreen, false);
-                }
-              } else if (currentParams && (currentParams.includes("<") || currentParams.includes("max-width"))) {
-                let match = currentParams.match(/<\s*([^),\s]+)/);
-                if (!match) {
-                  match = currentParams.match(/max-width:\s*([^),\s]+)/);
-                }
-                if (match) {
-                  const minScreen = defaultClampRange.min || screenValues[0];
-                  const maxScreen = match[1].trim();
-                  processClampDeclaration(decl, minScreen, maxScreen, false);
-                }
-              }
-            });
+            if (processedAtRules.has(atRule)) return;
+            const { isNested, hasNestedMedia } = getNestedStructure(atRule);
+            if (hasNestedMedia) {
+              atRule.walkAtRules("media", (nestedAtRule) => {
+                processedAtRules.add(nestedAtRule);
+                processMediaQuery(nestedAtRule, atRule);
+              });
+            } else if (isNested) {
+              return;
+            } else {
+              processMediaQuery(atRule);
+            }
           });
           root.walkAtRules("container", (atRule) => {
-            const clampDecls = [];
-            atRule.walkDecls((decl) => {
-              if (extractTwoValidClampArgs(decl.value)) {
-                clampDecls.push(decl);
-              }
-            });
-            if (!clampDecls.length) return;
-            clampDecls.forEach((decl) => {
-              const isNested = decl.parent?.type === "atrule" && decl.parent?.parent.type === "atrule";
-              const isSameAtRule = decl.parent?.name === decl.parent?.parent.name;
-              if (isNested && isSameAtRule) {
-                const currentParams2 = decl.parent.params;
-                const parentParams = decl.parent.parent.params;
-                let minContainer = null;
-                let maxContainer = null;
-                if (parentParams && (parentParams.includes(">") || parentParams.includes("min-width"))) {
-                  let match = parentParams.match(/>=?\s*([^),\s]+)/);
-                  if (!match) {
-                    match = parentParams.match(/min-width:\s*([^),\s]+)/);
-                  }
-                  if (match) minContainer = match[1].trim();
-                }
-                if (!minContainer && (currentParams2 && (currentParams2.includes(">") || currentParams2.includes("min-width")))) {
-                  let match = currentParams2.match(/>=?\s*([^),\s]+)/);
-                  if (!match) {
-                    match = currentParams2.match(/min-width:\s*([^),\s]+)/);
-                  }
-                  if (match) minContainer = match[1].trim();
-                }
-                if (parentParams && (parentParams.includes("<") || parentParams.includes("max-width"))) {
-                  let match = parentParams.match(/<\s*([^),\s]+)/);
-                  if (!match) {
-                    match = parentParams.match(/max-width:\s*([^),\s]+)/);
-                  }
-                  if (match) maxContainer = match[1].trim();
-                }
-                if (!maxContainer && (currentParams2 && (currentParams2.includes("<") || currentParams2.includes("max-width")))) {
-                  let match = currentParams2.match(/<\s*([^),\s]+)/);
-                  if (!match) {
-                    match = currentParams2.match(/max-width:\s*([^),\s]+)/);
-                  }
-                  if (match) maxContainer = match[1].trim();
-                }
-                if (minContainer && maxContainer) {
-                  clampDecls.forEach((decl2) => {
-                    processClampDeclaration(
-                      decl2,
-                      minContainer,
-                      maxContainer,
-                      true
-                    );
-                  });
-                }
-                return;
-              }
-              if (isNested && !isSameAtRule) {
-                clampDecls.forEach((decl2) => {
-                  decl2.value = ` ${decl2.value} /* Invalid nested @container rules */`;
-                });
-                return;
-              }
-              const containerValues = Object.values(containerScreens);
-              const currentParams = decl.parent.params;
-              if (currentParams && (currentParams.includes(">") || currentParams.includes("min-width"))) {
-                let match = currentParams.match(/>=?\s*([^),\s]+)/);
-                if (!match) {
-                  match = currentParams.match(/min-width:\s*([^),\s]+)/);
-                }
-                if (match) {
-                  const minContainer = match[1].trim();
-                  const maxContainer = containerValues[containerValues.length - 1];
-                  processClampDeclaration(
-                    decl,
-                    minContainer,
-                    maxContainer,
-                    true
-                  );
-                }
-              } else if (currentParams && (currentParams.includes("<") || currentParams.includes("max-width"))) {
-                let match = currentParams.match(/<\s*([^),\s]+)/);
-                if (!match) {
-                  match = currentParams.match(/max-width:\s*([^),\s]+)/);
-                }
-                if (match) {
-                  const minContainer = containerValues[0];
-                  const maxContainer = match[1].trim();
-                  processClampDeclaration(
-                    decl,
-                    minContainer,
-                    maxContainer,
-                    true
-                  );
-                }
-              }
-            });
+            if (processedAtRules.has(atRule)) return;
+            const { isNested, hasNestedMedia } = getNestedStructure(atRule);
+            if (hasNestedMedia) {
+              atRule.walkAtRules("container", (nestedAtRule) => {
+                processedAtRules.add(nestedAtRule);
+                processContainerQuery(nestedAtRule, atRule);
+              });
+            } else if (isNested) {
+              return;
+            } else {
+              processContainerQuery(atRule);
+            }
           });
           root.walkRules((rule) => {
             let parent = rule.parent;

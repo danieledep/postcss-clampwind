@@ -170,4 +170,61 @@ const sortScreens = (screens) => {
   }, {});
 };
 
-export { extractTwoValidClampArgs, convertToRem, generateClamp, sortScreens };
+/**
+ * Extracts the maximum viewport/container width value from media query parameters.
+ * Handles multiple syntax formats including modern range syntax, traditional syntax,
+ * and build-optimized negation patterns.
+ * 
+ * @param {string|null|undefined} params - The media/container query parameters string to parse.
+ * @returns {string|null} The extracted maximum width value with its unit (e.g., "1024px", "48rem"), or null if no maximum width constraint is found.
+ * 
+ */
+const extractMaxValue = (params) => {
+    if (!params) return null;
+    
+    // Try modern < syntax
+    let match = params.match(/<\s*([^),\s]+)/);
+    if (match) return match[1].trim();
+    
+    // Try traditional max-width syntax
+    match = params.match(/max-width:\s*([^),\s]+)/);
+    if (match) return match[1].trim();
+    
+    // Try "not all and (min-width:...)"
+    match = params.match(/not\s+all\s+and\s*\(\s*min-width:\s*([^),\s]+)\s*\)/);
+    if (match) return match[1].trim();
+    
+    return null;
+};
+
+/**
+ * Extracts the minimum viewport/container width value from media query parameters.
+ * Handles multiple syntax formats including modern range syntax, traditional syntax,
+ * and build-optimized negation patterns.
+ * 
+ * @param {string|null|undefined} params - The media/container query parameters string to parse. 
+ * @returns {string|null} The extracted minimum width value with its unit (e.g., "768px", "48rem"), or null if no minimum width constraint is found.
+ * 
+ */
+const extractMinValue = (params) => {
+    if (!params) return null;
+    
+    // Try modern >= or > syntax
+    let match = params.match(/>=?\s*([^),\s]+)/);
+    if (match) return match[1].trim();
+    
+    // Try traditional min-width syntax
+    match = params.match(/min-width:\s*([^),\s]+)/);
+    if (match) return match[1].trim();
+    
+    // Try "not all and (max-width:...)"
+    // This means everything NOT below X, so minimum is X+1 (though you might need to handle this differently)
+    match = params.match(/not\s+all\s+and\s*\(\s*max-width:\s*([^),\s]+)\s*\)/);
+    if (match) {
+        return match[1].trim();
+    }
+    
+    return null;
+};
+
+export { extractTwoValidClampArgs, convertToRem, generateClamp, sortScreens, extractMaxValue, extractMinValue };
