@@ -7,12 +7,12 @@
 const smartRound = (value, maxDecimals = 4) => {
   // Convert to string with max precision first
   const precise = value.toFixed(maxDecimals);
-  
+
   // Remove trailing zeros after decimal point
-  const trimmed = precise.replace(/\.?0+$/, '');
-  
+  const trimmed = precise.replace(/\.?0+$/, "");
+
   // If we removed everything after decimal, return the integer part
-  return trimmed || '0';
+  return trimmed || "0";
 };
 
 /**
@@ -21,7 +21,9 @@ const smartRound = (value, maxDecimals = 4) => {
  * @returns {Array<string>} The lower and upper clamp args
  */
 const extractTwoValidClampArgs = (value) => {
-  const m = value.match(/\bclamp\s*\(\s*(var\([^()]+\)|[^,()]+)\s*,\s*(var\([^()]+\)|[^,()]+)\s*\)$/);
+  const m = value.match(
+    /\bclamp\s*\(\s*(var\([^()]+\)|[^,()]+)\s*,\s*(var\([^()]+\)|[^,()]+)\s*\)$/,
+  );
   return m ? [m[1].trim(), m[2].trim()] : null;
 };
 
@@ -31,9 +33,9 @@ const extractTwoValidClampArgs = (value) => {
  * @returns {string|null} The unit or null if no unit found
  */
 const extractUnit = (value) => {
-  const trimmedValue = value.replace(/\s+/g, '');
-  if (trimmedValue.includes('--')) {
-    const match = trimmedValue.replace(/var\(([^,)]+)[^)]*\)/, '$1');
+  const trimmedValue = value.replace(/\s+/g, "");
+  if (trimmedValue.includes("--")) {
+    const match = trimmedValue.replace(/var\(([^,)]+)[^)]*\)/, "$1");
     return match ? match : null;
   } else {
     const match = trimmedValue.match(/\D+$/);
@@ -47,8 +49,8 @@ const extractUnit = (value) => {
  * @returns {string} The formatted value
  */
 const formatProperty = (value) => {
-  const trimmedValue = value.replace(/\s+/g, '');
-  return trimmedValue.replace(/var\(([^,)]+)[^)]*\)/, '$1');
+  const trimmedValue = value.replace(/\s+/g, "");
+  return trimmedValue.replace(/var\(([^,)]+)[^)]*\)/, "$1");
 };
 
 /**
@@ -60,17 +62,25 @@ const formatProperty = (value) => {
  * @param {Object} customProperties - The custom properties
  * @returns {string} The converted value
  */
-const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) => {
+const convertToRem = (
+  value,
+  rootFontSize,
+  spacingSize,
+  customProperties = {},
+) => {
   const unit = extractUnit(value);
   const formattedProperty = formatProperty(value);
-  const fallbackValue = value.includes('var(') && value.includes(',') ? value.replace(/var\([^,]+,\s*([^)]+)\)/, '$1') : null;
+  const fallbackValue =
+    value.includes("var(") && value.includes(",")
+      ? value.replace(/var\([^,]+,\s*([^)]+)\)/, "$1")
+      : null;
 
   if (!unit) {
     const spacingSizeInt = parseFloat(spacingSize);
     const spacingUnit = extractUnit(spacingSize);
-    
+
     if (spacingUnit === "px") {
-      return `${smartRound(value * spacingSizeInt / rootFontSize)}rem`;
+      return `${smartRound((value * spacingSizeInt) / rootFontSize)}rem`;
     }
 
     if (spacingUnit === "rem") {
@@ -90,7 +100,11 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
     return customProperties[formattedProperty];
   }
 
-  if (formattedProperty && !customProperties[formattedProperty] && fallbackValue) {
+  if (
+    formattedProperty &&
+    !customProperties[formattedProperty] &&
+    fallbackValue
+  ) {
     const fallbackUnit = extractUnit(fallbackValue);
 
     if (!fallbackUnit) {
@@ -126,13 +140,13 @@ const generateClamp = (
   maxScreen,
   rootFontSize = 16,
   spacingSize = "1px",
-  containerQuery = false
+  containerQuery = false,
 ) => {
   const maxScreenInt = parseFloat(
-    convertToRem(maxScreen, rootFontSize, spacingSize)
+    convertToRem(maxScreen, rootFontSize, spacingSize),
   );
   const minScreenInt = parseFloat(
-    convertToRem(minScreen, rootFontSize, spacingSize)
+    convertToRem(minScreen, rootFontSize, spacingSize),
   );
   const lowerInt = parseFloat(lower);
   const upperInt = parseFloat(upper);
@@ -143,7 +157,9 @@ const generateClamp = (
 
   const widthUnit = containerQuery ? `100cqw` : `100vw`;
 
-  const slopeInt = smartRound((upperInt - lowerInt) / (maxScreenInt - minScreenInt));
+  const slopeInt = smartRound(
+    (upperInt - lowerInt) / (maxScreenInt - minScreenInt),
+  );
   const clamp = `clamp(${min}, calc(${lower} + ${slopeInt} * (${widthUnit} - ${minScreen})), ${max})`;
 
   return clamp;
@@ -155,7 +171,6 @@ const generateClamp = (
  * @returns {Object} The sorted screens
  */
 const sortScreens = (screens) => {
-
   // Sort by rem values
   const sortedKeys = Object.keys(screens).sort((a, b) => {
     const aValue = parseFloat(screens[a]);
@@ -170,4 +185,74 @@ const sortScreens = (screens) => {
   }, {});
 };
 
-export { extractTwoValidClampArgs, convertToRem, generateClamp, sortScreens };
+/**
+ * Extracts the maximum viewport/container width value from media query parameters.
+ * Handles multiple syntax formats including modern range syntax, traditional syntax,
+ * and build-optimized negation patterns.
+ *
+ * @param {string|null|undefined} params - The media/container query parameters string to parse.
+ * @returns {string|null} The extracted maximum width value with its unit (e.g., "1024px", "48rem"), or null if no maximum width constraint is found.
+ *
+ */
+const extractMaxValue = (params) => {
+  if (!params) return null;
+
+  // Try modern < syntax
+  let match = params.match(/<\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+
+  // If "not all and (max-width:...)" is present, this is NOT a max constraint
+  if (params.match(/not\s+all\s+and\s*\(\s*max-width:/)) return null;
+
+  // Try traditional max-width syntax
+  match = params.match(/max-width:\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+
+  // Try "not all and (min-width:...)"
+  match = params.match(/not\s+all\s+and\s*\(\s*min-width:\s*([^),\s]+)\s*\)/);
+  if (match) return match[1].trim();
+
+  return null;
+};
+
+/**
+ * Extracts the minimum viewport/container width value from media query parameters.
+ * Handles multiple syntax formats including modern range syntax, traditional syntax,
+ * and build-optimized negation patterns.
+ *
+ * @param {string|null|undefined} params - The media/container query parameters string to parse.
+ * @returns {string|null} The extracted minimum width value with its unit (e.g., "768px", "48rem"), or null if no minimum width constraint is found.
+ *
+ */
+const extractMinValue = (params) => {
+  if (!params) return null;
+
+  // Try modern >= or > syntax
+  let match = params.match(/>=?\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+
+  // If "not all and (min-width:...)" is present, this is NOT a min constraint
+  if (params.match(/not\s+all\s+and\s*\(\s*min-width:/)) return null;
+
+  // Try traditional min-width syntax
+  match = params.match(/min-width:\s*([^),\s]+)/);
+  if (match) return match[1].trim();
+
+  // Try "not all and (max-width:...)"
+  // This means everything NOT below X, so minimum is X+1 (though you might need to handle this differently)
+  match = params.match(/not\s+all\s+and\s*\(\s*max-width:\s*([^),\s]+)\s*\)/);
+  if (match) {
+    return match[1].trim();
+  }
+
+  return null;
+};
+
+export {
+  extractTwoValidClampArgs,
+  convertToRem,
+  generateClamp,
+  sortScreens,
+  extractMaxValue,
+  extractMinValue,
+};
