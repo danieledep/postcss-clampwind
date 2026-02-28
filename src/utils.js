@@ -186,6 +186,9 @@ const extractMaxValue = (params) => {
     let match = params.match(/<\s*([^),\s]+)/);
     if (match) return match[1].trim();
     
+    // If "not all and (max-width:...)" is present, this is NOT a max constraint
+    if (params.match(/not\s+all\s+and\s*\(\s*max-width:/)) return null;
+
     // Try traditional max-width syntax
     match = params.match(/max-width:\s*([^),\s]+)/);
     if (match) return match[1].trim();
@@ -213,6 +216,9 @@ const extractMinValue = (params) => {
     let match = params.match(/>=?\s*([^),\s]+)/);
     if (match) return match[1].trim();
     
+    // If "not all and (min-width:...)" is present, this is NOT a min constraint
+    if (params.match(/not\s+all\s+and\s*\(\s*min-width:/)) return null;
+
     // Try traditional min-width syntax
     match = params.match(/min-width:\s*([^),\s]+)/);
     if (match) return match[1].trim();
