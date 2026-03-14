@@ -369,17 +369,26 @@ var clampwind = (opts = {}) => {
         decl.value = clamp;
         return true;
       };
-      const getNestedStructure = (atRule) => {
-        const isNested = atRule.parent?.type === "atrule" && atRule.parent?.name === "media";
+      const getNestedStructure = (atRule, ruleName = "media") => {
+        const isNested = atRule.parent?.type === "atrule" && atRule.parent?.name === ruleName;
         const hasNestedMedia = atRule.nodes?.some(
-          (node) => node.type === "atrule" && node.name === "media"
+          (node) => node.type === "atrule" && node.name === ruleName
         );
         return { isNested, hasNestedMedia };
       };
-      const processMediaQuery = (atRule, parentAtRule = null) => {
+      const isDeclInsideNestedAtRule = (decl, boundaryAtRule, ruleName) => {
+        let parent = decl.parent;
+        while (parent && parent !== boundaryAtRule) {
+          if (parent.type === "atrule" && parent.name === ruleName) return true;
+          parent = parent.parent;
+        }
+        return false;
+      };
+      const processMediaQuery = (atRule, parentAtRule = null, skipNestedAtRuleName = null) => {
         const clampDecls = [];
         atRule.walkDecls((decl) => {
           if (extractTwoValidClampArgs(decl.value)) {
+            if (skipNestedAtRuleName && isDeclInsideNestedAtRule(decl, atRule, skipNestedAtRuleName)) return;
             clampDecls.push(decl);
           }
         });
@@ -418,10 +427,11 @@ var clampwind = (opts = {}) => {
           }
         }
       };
-      const processContainerQuery = (atRule, parentAtRule = null) => {
+      const processContainerQuery = (atRule, parentAtRule = null, skipNestedAtRuleName = null) => {
         const clampDecls = [];
         atRule.walkDecls((decl) => {
           if (extractTwoValidClampArgs(decl.value)) {
+            if (skipNestedAtRuleName && isDeclInsideNestedAtRule(decl, atRule, skipNestedAtRuleName)) return;
             clampDecls.push(decl);
           }
         });
@@ -470,6 +480,7 @@ var clampwind = (opts = {}) => {
             if (processedAtRules.has(atRule)) return;
             const { isNested, hasNestedMedia } = getNestedStructure(atRule);
             if (hasNestedMedia) {
+              processMediaQuery(atRule, null, "media");
               atRule.walkAtRules("media", (nestedAtRule) => {
                 processedAtRules.add(nestedAtRule);
                 processMediaQuery(nestedAtRule, atRule);
@@ -482,8 +493,9 @@ var clampwind = (opts = {}) => {
           });
           root.walkAtRules("container", (atRule) => {
             if (processedAtRules.has(atRule)) return;
-            const { isNested, hasNestedMedia } = getNestedStructure(atRule);
+            const { isNested, hasNestedMedia } = getNestedStructure(atRule, "container");
             if (hasNestedMedia) {
+              processContainerQuery(atRule, null, "container");
               atRule.walkAtRules("container", (nestedAtRule) => {
                 processedAtRules.add(nestedAtRule);
                 processContainerQuery(nestedAtRule, atRule);

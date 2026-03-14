@@ -1,6 +1,6 @@
 {
   "name": "postcss-clampwind",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "A PostCSS plugin to create fluid clamp values for any Tailwind CSS utility",
   "license": "Apache-2.0",
   "keywords": [

@@ -230,23 +230,33 @@ const clampwind = (opts = {}) => {
       };
 
       // Helper to check if we're in dev or build environment
-      const getNestedStructure = (atRule) => {
-        // Check if this atRule is nested inside another media query
-        const isNested = atRule.parent?.type === "atrule" && atRule.parent?.name === "media";
-        
-        // Check if the atRule contains nested media queries (build structure)
+      const getNestedStructure = (atRule, ruleName = "media") => {
+        // Check if this atRule is nested inside another at-rule of the same type
+        const isNested = atRule.parent?.type === "atrule" && atRule.parent?.name === ruleName;
+
+        // Check if the atRule contains nested at-rules of the same type (build structure)
         const hasNestedMedia = atRule.nodes?.some(
-          node => node.type === 'atrule' && node.name === 'media'
+          node => node.type === 'atrule' && node.name === ruleName
         );
-        
+
         return { isNested, hasNestedMedia };
       };
 
+      const isDeclInsideNestedAtRule = (decl, boundaryAtRule, ruleName) => {
+        let parent = decl.parent;
+        while (parent && parent !== boundaryAtRule) {
+          if (parent.type === 'atrule' && parent.name === ruleName) return true;
+          parent = parent.parent;
+        }
+        return false;
+      };
+
       // Process media queries with nested structure awareness
-      const processMediaQuery = (atRule, parentAtRule = null) => {
+      const processMediaQuery = (atRule, parentAtRule = null, skipNestedAtRuleName = null) => {
         const clampDecls = [];
         atRule.walkDecls((decl) => {
           if (extractTwoValidClampArgs(decl.value)) {
+            if (skipNestedAtRuleName && isDeclInsideNestedAtRule(decl, atRule, skipNestedAtRuleName)) return;
             clampDecls.push(decl);
           }
         });
@@ -295,10 +305,11 @@ const clampwind = (opts = {}) => {
       };
 
       // Process container queries with nested structure awareness
-      const processContainerQuery = (atRule, parentAtRule = null) => {
+      const processContainerQuery = (atRule, parentAtRule = null, skipNestedAtRuleName = null) => {
         const clampDecls = [];
         atRule.walkDecls((decl) => {
           if (extractTwoValidClampArgs(decl.value)) {
+            if (skipNestedAtRuleName && isDeclInsideNestedAtRule(decl, atRule, skipNestedAtRuleName)) return;
             clampDecls.push(decl);
           }
         });
@@ -365,6 +376,7 @@ const clampwind = (opts = {}) => {
             // MARK: Nested MQ
             // If this media query contains nested media queries
             if (hasNestedMedia) {
+              processMediaQuery(atRule, null, "media");
               atRule.walkAtRules("media", (nestedAtRule) => {
                 processedAtRules.add(nestedAtRule);
                 processMediaQuery(nestedAtRule, atRule);
@@ -385,11 +397,12 @@ const clampwind = (opts = {}) => {
           root.walkAtRules("container", (atRule) => {
             if (processedAtRules.has(atRule)) return;
             
-            const { isNested, hasNestedMedia } = getNestedStructure(atRule);
-            
+            const { isNested, hasNestedMedia } = getNestedStructure(atRule, "container");
+
             // MARK: Nested CQ
             // If this container query contains nested container queries
             if (hasNestedMedia) {
+              processContainerQuery(atRule, null, "container");
               atRule.walkAtRules("container", (nestedAtRule) => {
                 processedAtRules.add(nestedAtRule);
                 processContainerQuery(nestedAtRule, atRule);
