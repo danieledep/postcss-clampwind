@@ -5,3 +5,5 @@ npm-debug.log
 yarn-error.log
 .DS_Store
 .editorconfig
+.npmrc
+.env
