@@ -5,7 +5,7 @@ import {
   generateClamp,
   sortScreens,
   extractMaxValue,
-  extractMinValue,
+  extractMinValue
 } from "./utils.js";
 
 const clampwind = (opts = {}) => {
@@ -55,7 +55,7 @@ const clampwind = (opts = {}) => {
                 decl.value,
                 rootFontSize,
                 spacingSize,
-                customProperties,
+                customProperties
               );
             }
             if (decl.prop.startsWith("--container-")) {
@@ -64,7 +64,7 @@ const clampwind = (opts = {}) => {
                 decl.value,
                 rootFontSize,
                 spacingSize,
-                customProperties,
+                customProperties
               );
             }
             if (decl.prop === "--breakpoint-clamp-min") {
@@ -72,7 +72,7 @@ const clampwind = (opts = {}) => {
                 decl.value,
                 rootFontSize,
                 spacingSize,
-                customProperties,
+                customProperties
               );
             }
             if (decl.prop === "--breakpoint-clamp-max") {
@@ -80,7 +80,7 @@ const clampwind = (opts = {}) => {
                 decl.value,
                 rootFontSize,
                 spacingSize,
-                customProperties,
+                customProperties
               );
             }
             if (decl.prop === "--spacing") {
@@ -91,7 +91,7 @@ const clampwind = (opts = {}) => {
                 decl.value,
                 rootFontSize,
                 spacingSize,
-                customProperties,
+                customProperties
               );
               if (value) customProperties[decl.prop] = value;
             }
@@ -120,7 +120,7 @@ const clampwind = (opts = {}) => {
                   decl.value,
                   rootFontSize,
                   spacingSize,
-                  customProperties,
+                  customProperties
                 );
               }
               if (decl.prop.startsWith("--container-")) {
@@ -129,7 +129,7 @@ const clampwind = (opts = {}) => {
                   decl.value,
                   rootFontSize,
                   spacingSize,
-                  customProperties,
+                  customProperties
                 );
               }
               if (decl.prop === "--breakpoint-clamp-min") {
@@ -137,7 +137,7 @@ const clampwind = (opts = {}) => {
                   decl.value,
                   rootFontSize,
                   spacingSize,
-                  customProperties,
+                  customProperties
                 );
               }
               if (decl.prop === "--breakpoint-clamp-max") {
@@ -145,7 +145,7 @@ const clampwind = (opts = {}) => {
                   decl.value,
                   rootFontSize,
                   spacingSize,
-                  customProperties,
+                  customProperties
                 );
               }
               if (decl.prop === "--spacing") {
@@ -156,7 +156,7 @@ const clampwind = (opts = {}) => {
                   decl.value,
                   rootFontSize,
                   spacingSize,
-                  customProperties,
+                  customProperties
                 );
                 if (value) customProperties[decl.prop] = value;
               }
@@ -176,7 +176,7 @@ const clampwind = (opts = {}) => {
           {},
           screens,
           config.rootElementBreakpoints,
-          config.themeLayerBreakpoints,
+          config.themeLayerBreakpoints
         );
         screens = sortScreens(screens);
 
@@ -185,7 +185,7 @@ const clampwind = (opts = {}) => {
           {},
           containerScreens,
           config.rootElementContainerBreakpoints,
-          config.themeLayerContainerBreakpoints,
+          config.themeLayerContainerBreakpoints
         );
         containerScreens = sortScreens(containerScreens);
 
@@ -197,11 +197,11 @@ const clampwind = (opts = {}) => {
         decl,
         minScreen,
         maxScreen,
-        isContainer = false,
+        isContainer = false
       ) => {
         const args = extractTwoValidClampArgs(decl.value);
         const [lower, upper] = args.map((val) =>
-          convertToRem(val, rootFontSize, spacingSize, customProperties),
+          convertToRem(val, rootFontSize, spacingSize, customProperties)
         );
 
         if (!args || !lower || !upper) {
@@ -209,8 +209,8 @@ const clampwind = (opts = {}) => {
             `Invalid clamp() values: "${decl.value}". Expected format: clamp(min, preferred, max)`,
             {
               node: decl,
-              word: decl.value,
-            },
+              word: decl.value
+            }
           );
 
           decl.value = `${decl.value} /* Invalid clamp() values */`;
@@ -223,31 +223,40 @@ const clampwind = (opts = {}) => {
           maxScreen,
           rootFontSize,
           spacingSize,
-          isContainer,
+          isContainer
         );
         decl.value = clamp;
         return true;
       };
 
       // Helper to check if we're in dev or build environment
-      const getNestedStructure = (atRule) => {
-        // Check if this atRule is nested inside another media query
-        const isNested =
-          atRule.parent?.type === "atrule" && atRule.parent?.name === "media";
+      const getNestedStructure = (atRule, ruleName = "media") => {
+        // Check if this atRule is nested inside another at-rule of the same type
+        const isNested = atRule.parent?.type === "atrule" && atRule.parent?.name === ruleName;
 
-        // Check if the atRule contains nested media queries (build structure)
+        // Check if the atRule contains nested at-rules of the same type (build structure)
         const hasNestedMedia = atRule.nodes?.some(
-          (node) => node.type === "atrule" && node.name === "media",
+          node => node.type === 'atrule' && node.name === ruleName
         );
 
         return { isNested, hasNestedMedia };
       };
 
+      const isDeclInsideNestedAtRule = (decl, boundaryAtRule, ruleName) => {
+        let parent = decl.parent;
+        while (parent && parent !== boundaryAtRule) {
+          if (parent.type === 'atrule' && parent.name === ruleName) return true;
+          parent = parent.parent;
+        }
+        return false;
+      };
+
       // Process media queries with nested structure awareness
-      const processMediaQuery = (atRule, parentAtRule = null) => {
+      const processMediaQuery = (atRule, parentAtRule = null, skipNestedAtRuleName = null) => {
         const clampDecls = [];
         atRule.walkDecls((decl) => {
           if (extractTwoValidClampArgs(decl.value)) {
+            if (skipNestedAtRuleName && isDeclInsideNestedAtRule(decl, atRule, skipNestedAtRuleName)) return;
             clampDecls.push(decl);
           }
         });
@@ -261,10 +270,8 @@ const clampwind = (opts = {}) => {
           const currentParams = atRule.params;
           const parentParams = parentAtRule.params;
 
-          const minScreen =
-            extractMinValue(parentParams) || extractMinValue(currentParams);
-          const maxScreen =
-            extractMaxValue(parentParams) || extractMaxValue(currentParams);
+          const minScreen = extractMinValue(parentParams) || extractMinValue(currentParams);
+          const maxScreen = extractMaxValue(parentParams) || extractMaxValue(currentParams);
 
           if (minScreen && maxScreen) {
             clampDecls.forEach((decl) => {
@@ -279,8 +286,7 @@ const clampwind = (opts = {}) => {
 
           if (minValue && !maxValue) {
             const minScreen = minValue;
-            const maxScreen =
-              defaultClampRange.max || screenValues[screenValues.length - 1];
+            const maxScreen = defaultClampRange.max || screenValues[screenValues.length - 1];
             clampDecls.forEach((decl) => {
               processClampDeclaration(decl, minScreen, maxScreen, false);
             });
@@ -299,10 +305,11 @@ const clampwind = (opts = {}) => {
       };
 
       // Process container queries with nested structure awareness
-      const processContainerQuery = (atRule, parentAtRule = null) => {
+      const processContainerQuery = (atRule, parentAtRule = null, skipNestedAtRuleName = null) => {
         const clampDecls = [];
         atRule.walkDecls((decl) => {
           if (extractTwoValidClampArgs(decl.value)) {
+            if (skipNestedAtRuleName && isDeclInsideNestedAtRule(decl, atRule, skipNestedAtRuleName)) return;
             clampDecls.push(decl);
           }
         });
@@ -316,10 +323,8 @@ const clampwind = (opts = {}) => {
           const currentParams = atRule.params;
           const parentParams = parentAtRule.params;
 
-          const minContainer =
-            extractMinValue(parentParams) || extractMinValue(currentParams);
-          const maxContainer =
-            extractMaxValue(parentParams) || extractMaxValue(currentParams);
+          const minContainer = extractMinValue(parentParams) || extractMinValue(currentParams);
+          const maxContainer = extractMaxValue(parentParams) || extractMaxValue(currentParams);
 
           if (minContainer && maxContainer) {
             clampDecls.forEach((decl) => {
@@ -371,6 +376,7 @@ const clampwind = (opts = {}) => {
             // MARK: Nested MQ
             // If this media query contains nested media queries
             if (hasNestedMedia) {
+              processMediaQuery(atRule, null, "media");
               atRule.walkAtRules("media", (nestedAtRule) => {
                 processedAtRules.add(nestedAtRule);
                 processMediaQuery(nestedAtRule, atRule);
@@ -391,11 +397,12 @@ const clampwind = (opts = {}) => {
           root.walkAtRules("container", (atRule) => {
             if (processedAtRules.has(atRule)) return;
 
-            const { isNested, hasNestedMedia } = getNestedStructure(atRule);
+            const { isNested, hasNestedMedia } = getNestedStructure(atRule, "container");
 
             // MARK: Nested CQ
             // If this container query contains nested container queries
             if (hasNestedMedia) {
+              processContainerQuery(atRule, null, "container");
               atRule.walkAtRules("container", (nestedAtRule) => {
                 processedAtRules.add(nestedAtRule);
                 processContainerQuery(nestedAtRule, atRule);
