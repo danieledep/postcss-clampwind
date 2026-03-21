@@ -158,10 +158,10 @@ var extractMaxValue = (params) => {
   if (!params) return null;
   let match = params.match(/<\s*([^),\s]+)/);
   if (match) return match[1].trim();
-  if (params.match(/not\s+all\s+and\s*\(\s*max-width:/)) return null;
+  if (params.match(/not\s+(?:all\s+and\s*)?\(\s*max-width:/)) return null;
   match = params.match(/max-width:\s*([^),\s]+)/);
   if (match) return match[1].trim();
-  match = params.match(/not\s+all\s+and\s*\(\s*min-width:\s*([^),\s]+)\s*\)/);
+  match = params.match(/not\s+(?:all\s+and\s*)?\(\s*min-width:\s*([^),\s]+)\s*\)/);
   if (match) return match[1].trim();
   return null;
 };
@@ -169,10 +169,10 @@ var extractMinValue = (params) => {
   if (!params) return null;
   let match = params.match(/>=?\s*([^),\s]+)/);
   if (match) return match[1].trim();
-  if (params.match(/not\s+all\s+and\s*\(\s*min-width:/)) return null;
+  if (params.match(/not\s+(?:all\s+and\s*)?\(\s*min-width:/)) return null;
   match = params.match(/min-width:\s*([^),\s]+)/);
   if (match) return match[1].trim();
-  match = params.match(/not\s+all\s+and\s*\(\s*max-width:\s*([^),\s]+)\s*\)/);
+  match = params.match(/not\s+(?:all\s+and\s*)?\(\s*max-width:\s*([^),\s]+)\s*\)/);
   if (match) {
     return match[1].trim();
   }

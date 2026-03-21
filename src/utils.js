@@ -186,15 +186,15 @@ const extractMaxValue = (params) => {
     let match = params.match(/<\s*([^),\s]+)/);
     if (match) return match[1].trim();
     
-    // If "not all and (max-width:...)" is present, this is NOT a max constraint
-    if (params.match(/not\s+all\s+and\s*\(\s*max-width:/)) return null;
+    // If "not (max-width:...)" or "not all and (max-width:...)" is present, this is NOT a max constraint
+    if (params.match(/not\s+(?:all\s+and\s*)?\(\s*max-width:/)) return null;
 
     // Try traditional max-width syntax
     match = params.match(/max-width:\s*([^),\s]+)/);
     if (match) return match[1].trim();
     
-    // Try "not all and (min-width:...)"
-    match = params.match(/not\s+all\s+and\s*\(\s*min-width:\s*([^),\s]+)\s*\)/);
+    // Try "not all and (min-width:...)" or "not (min-width:...)"
+    match = params.match(/not\s+(?:all\s+and\s*)?\(\s*min-width:\s*([^),\s]+)\s*\)/);
     if (match) return match[1].trim();
     
     return null;
@@ -216,16 +216,16 @@ const extractMinValue = (params) => {
     let match = params.match(/>=?\s*([^),\s]+)/);
     if (match) return match[1].trim();
     
-    // If "not all and (min-width:...)" is present, this is NOT a min constraint
-    if (params.match(/not\s+all\s+and\s*\(\s*min-width:/)) return null;
+    // If "not (min-width:...)" or "not all and (min-width:...)" is present, this is NOT a min constraint
+    if (params.match(/not\s+(?:all\s+and\s*)?\(\s*min-width:/)) return null;
 
     // Try traditional min-width syntax
     match = params.match(/min-width:\s*([^),\s]+)/);
     if (match) return match[1].trim();
     
-    // Try "not all and (max-width:...)"
+    // Try "not all and (max-width:...)" or "not (max-width:...)"
     // This means everything NOT below X, so minimum is X+1 (though you might need to handle this differently)
-    match = params.match(/not\s+all\s+and\s*\(\s*max-width:\s*([^),\s]+)\s*\)/);
+    match = params.match(/not\s+(?:all\s+and\s*)?\(\s*max-width:\s*([^),\s]+)\s*\)/);
     if (match) {
         return match[1].trim();
     }
